@@ -8,7 +8,7 @@ project space.
 ## Reporting
 
 Report unacceptable behaviour privately to the maintainer,
-[@25LioN52](https://github.com/25LioN52), using the contact details on their GitHub profile. If the behaviour
+[@mike-zaz](https://github.com/mike-zaz), using the contact details on their GitHub profile. If the behaviour
 involves the maintainer, use GitHub's [report content](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam)
 feature instead. All reports are handled confidentially.
 

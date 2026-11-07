@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Question or setup help
-    url: https://github.com/25LioN52/JellyfinHyperionGrabber/discussions
+    url: https://github.com/mike-zaz/JellyfinHyperionGrabber/discussions
     about: Ask in GitHub Discussions; issues are for bugs and feature requests.
   - name: Documentation
-    url: https://25lion52.github.io/JellyfinHyperionGrabber/
+    url: https://mike-zaz.github.io/JellyfinHyperionGrabber/
     about: Installation, Hyperion/HyperHDR setup and troubleshooting.
   - name: Security vulnerability
-    url: https://github.com/25LioN52/JellyfinHyperionGrabber/security/advisories/new
+    url: https://github.com/mike-zaz/JellyfinHyperionGrabber/security/advisories/new
     about: Report privately, never in a public issue.

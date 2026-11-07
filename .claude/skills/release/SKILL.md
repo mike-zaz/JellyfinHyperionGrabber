@@ -21,7 +21,7 @@ Read `docs/development/releasing.md` first. Releases are never created by hand.
 ## Verify a release
 
 - Release assets: two zips plus `manifest-versions.json`.
-- `https://25lion52.github.io/JellyfinHyperionGrabber/manifest.json` contains both versions with the right `targetAbi`
+- `https://mike-zaz.github.io/JellyfinHyperionGrabber/manifest.json` contains both versions with the right `targetAbi`
   and checksums matching the zips (`Get-FileHash -Algorithm MD5`).
 - Installing from the repository URL works on Jellyfin 10.11 and 12 (see `docs/development/building.md` for running
   both in Docker).

@@ -1,8 +1,8 @@
 site_name: Hyperion Grabber for Jellyfin
 site_description: Ambient lighting for Jellyfin - stream the playing video to Hyperion.ng or HyperHDR.
-site_url: https://25lion52.github.io/JellyfinHyperionGrabber/
-repo_url: https://github.com/25LioN52/JellyfinHyperionGrabber
-repo_name: 25LioN52/JellyfinHyperionGrabber
+site_url: https://mike-zaz.github.io/JellyfinHyperionGrabber/
+repo_url: https://github.com/mike-zaz/JellyfinHyperionGrabber
+repo_name: mike-zaz/JellyfinHyperionGrabber
 edit_uri: edit/main/docs/
 copyright: GPL-3.0 &middot; Not affiliated with Jellyfin, Hyperion, HyperHDR, WLED or Philips.
 

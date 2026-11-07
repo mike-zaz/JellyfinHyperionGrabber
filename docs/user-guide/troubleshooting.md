@@ -181,5 +181,5 @@ it off again.
 
 ## Still stuck?
 
-Ask in [GitHub Discussions](https://github.com/25LioN52/JellyfinHyperionGrabber/discussions) with your plugin and
+Ask in [GitHub Discussions](https://github.com/mike-zaz/JellyfinHyperionGrabber/discussions) with your plugin and
 Jellyfin versions, Docker or native, Hyperion.ng/HyperHDR version and the log lines mentioning `HyperionGrabber`.

@@ -6,7 +6,7 @@ In Jellyfin open **Dashboard → Plugins**, go to the repository settings (the *
 the *Catalog* page, depending on your version) and add this URL:
 
 ```text
-https://25lion52.github.io/JellyfinHyperionGrabber/manifest.json
+https://mike-zaz.github.io/JellyfinHyperionGrabber/manifest.json
 ```
 
 Then install **Hyperion Grabber** from the catalog and restart Jellyfin. Updates appear in the catalog like any
@@ -28,7 +28,7 @@ The last number only tells the builds apart. When you upgrade Jellyfin from 10.1
 ## Manual installation
 
 1. Download the zip for your Jellyfin line from the
-   [releases page](https://github.com/25LioN52/JellyfinHyperionGrabber/releases):
+   [releases page](https://github.com/mike-zaz/JellyfinHyperionGrabber/releases):
    `hyperion-grabber_<version>_jellyfin-10.11.zip` or `..._jellyfin-12.zip`.
 2. Stop Jellyfin.
 3. Create a folder `Hyperion Grabber_<version>` inside Jellyfin's `plugins` folder and extract the zip into it:

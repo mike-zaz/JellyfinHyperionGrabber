@@ -7,18 +7,18 @@ The plugin streams the playing video to [Hyperion.ng](https://github.com/hyperio
 [HyperHDR](https://github.com/awawa-dev/HyperHDR), which drive your WLED strips, Philips Hue lights and every other
 LED device they support.
 
-[![CI](https://github.com/25LioN52/JellyfinHyperionGrabber/actions/workflows/ci.yml/badge.svg)](https://github.com/25LioN52/JellyfinHyperionGrabber/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/25LioN52/JellyfinHyperionGrabber?include_prereleases&sort=semver)](https://github.com/25LioN52/JellyfinHyperionGrabber/releases)
-[![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11%20%7C%2012.x-00a4dc)](https://25lion52.github.io/JellyfinHyperionGrabber/compatibility/)
+[![CI](https://github.com/mike-zaz/JellyfinHyperionGrabber/actions/workflows/ci.yml/badge.svg)](https://github.com/mike-zaz/JellyfinHyperionGrabber/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mike-zaz/JellyfinHyperionGrabber?include_prereleases&sort=semver)](https://github.com/mike-zaz/JellyfinHyperionGrabber/releases)
+[![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11%20%7C%2012.x-00a4dc)](https://mike-zaz.github.io/JellyfinHyperionGrabber/compatibility/)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
-[![Docs](https://img.shields.io/badge/docs-online-brightgreen)](https://25lion52.github.io/JellyfinHyperionGrabber/)
+[![Docs](https://img.shields.io/badge/docs-online-brightgreen)](https://mike-zaz.github.io/JellyfinHyperionGrabber/)
 
 </div>
 
 > [!NOTE]
 > **Early preview (v0.x).** The current version streams library videos to Hyperion/HyperHDR while they play on the
 > devices you select (one Hyperion server per TV), tone maps HDR and Dolby Vision, and plays an LED layout test
-> pattern. Per-device latency calibration is next, see the [roadmap](https://25lion52.github.io/JellyfinHyperionGrabber/roadmap/).
+> pattern. Per-device latency calibration is next, see the [roadmap](https://mike-zaz.github.io/JellyfinHyperionGrabber/roadmap/).
 
 ## Why
 
@@ -52,20 +52,20 @@ flowchart LR
     Hyperion --> Other["Other LED devices"]
 ```
 
-Read more in [How it works](https://25lion52.github.io/JellyfinHyperionGrabber/how-it-works/).
+Read more in [How it works](https://mike-zaz.github.io/JellyfinHyperionGrabber/how-it-works/).
 
 ## Quick start
 
 1. In Jellyfin, open **Dashboard → Plugins**, add the repository
-   `https://25lion52.github.io/JellyfinHyperionGrabber/manifest.json`, then install **Hyperion Grabber** from the
+   `https://mike-zaz.github.io/JellyfinHyperionGrabber/manifest.json`, then install **Hyperion Grabber** from the
    catalog and restart Jellyfin.
 2. Open **Dashboard → Plugins → Hyperion Grabber**, enter the address of your Hyperion.ng/HyperHDR server
    (FlatBuffers port `19400`) and click **Test connection**.
 3. Click **Send test pattern**: red top, green right, blue bottom, yellow left and a white light running clockwise.
    If that is not what your TV shows, fix the LED layout in Hyperion
-   ([guide](https://25lion52.github.io/JellyfinHyperionGrabber/user-guide/hyperion-setup/)).
+   ([guide](https://mike-zaz.github.io/JellyfinHyperionGrabber/user-guide/hyperion-setup/)).
 
-Full instructions: [Getting started](https://25lion52.github.io/JellyfinHyperionGrabber/getting-started/).
+Full instructions: [Getting started](https://mike-zaz.github.io/JellyfinHyperionGrabber/getting-started/).
 
 ## Compatibility
 
@@ -76,19 +76,19 @@ Full instructions: [Getting started](https://25lion52.github.io/JellyfinHyperion
 | Jellyfin clients | Any client that reports playback to the server |
 | Server OS | Linux, Docker, Windows, macOS (anywhere Jellyfin runs) |
 
-Details and tested setups: [Compatibility](https://25lion52.github.io/JellyfinHyperionGrabber/compatibility/).
+Details and tested setups: [Compatibility](https://mike-zaz.github.io/JellyfinHyperionGrabber/compatibility/).
 
 ## Documentation
 
-- [Getting started](https://25lion52.github.io/JellyfinHyperionGrabber/getting-started/)
-- [Hyperion.ng & HyperHDR setup](https://25lion52.github.io/JellyfinHyperionGrabber/user-guide/hyperion-setup/)
-- [Troubleshooting](https://25lion52.github.io/JellyfinHyperionGrabber/user-guide/troubleshooting/) and [FAQ](https://25lion52.github.io/JellyfinHyperionGrabber/user-guide/faq/)
-- [Developer guide](https://25lion52.github.io/JellyfinHyperionGrabber/development/)
+- [Getting started](https://mike-zaz.github.io/JellyfinHyperionGrabber/getting-started/)
+- [Hyperion.ng & HyperHDR setup](https://mike-zaz.github.io/JellyfinHyperionGrabber/user-guide/hyperion-setup/)
+- [Troubleshooting](https://mike-zaz.github.io/JellyfinHyperionGrabber/user-guide/troubleshooting/) and [FAQ](https://mike-zaz.github.io/JellyfinHyperionGrabber/user-guide/faq/)
+- [Developer guide](https://mike-zaz.github.io/JellyfinHyperionGrabber/development/)
 
 ## Contributing
 
 Contributions are welcome, from humans and AI agents alike: see [CONTRIBUTING.md](CONTRIBUTING.md).
-Questions go to [Discussions](https://github.com/25LioN52/JellyfinHyperionGrabber/discussions), and security
+Questions go to [Discussions](https://github.com/mike-zaz/JellyfinHyperionGrabber/discussions), and security
 issues to [private advisories](SECURITY.md).
 
 ## License

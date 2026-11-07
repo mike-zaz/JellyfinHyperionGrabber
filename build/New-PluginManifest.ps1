@@ -7,10 +7,13 @@
     downloads them all into one folder and calls this script, so the published manifest is always derived from the
     releases themselves and never edited by hand.
 
+    With -Repository, every GitHub release download link points to that repository. A release records its links
+    under the owner and repository name it had then; GitHub redirects old names only until someone takes them.
+
     Works on PowerShell 7 (CI) and Windows PowerShell 5.1.
 
 .EXAMPLE
-    ./build/New-PluginManifest.ps1 -VersionsDirectory release-manifests -OutputPath site/manifest.json
+    ./build/New-PluginManifest.ps1 -VersionsDirectory release-manifests -OutputPath site/manifest.json -Repository mike-zaz/JellyfinHyperionGrabber
 #>
 [CmdletBinding()]
 param(
@@ -18,7 +21,10 @@ param(
     [string] $VersionsDirectory,
 
     [Parameter(Mandatory = $true)]
-    [string] $OutputPath
+    [string] $OutputPath,
+
+    # owner/name of the repository whose releases hold the zips, for example $env:GITHUB_REPOSITORY.
+    [string] $Repository
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,6 +36,10 @@ if (Test-Path $VersionsDirectory) {
     foreach ($file in Get-ChildItem $VersionsDirectory -Filter '*.json' -Recurse) {
         # foreach (not @()) so Windows PowerShell 5.1, which emits a JSON array as one object, also flattens it.
         foreach ($entry in (Get-Content $file.FullName -Raw | ConvertFrom-Json)) {
+            if ($Repository -and $entry.sourceUrl -match '^https://github\.com/[^/]+/[^/]+/(releases/download/.+)$') {
+                $entry.sourceUrl = "https://github.com/$Repository/$($Matches[1])"
+            }
+
             $versions += $entry
         }
     }

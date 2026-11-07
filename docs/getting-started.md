@@ -8,7 +8,7 @@ Hyperion.ng or HyperHDR with your LEDs already working (for example with one of 
 1. In Jellyfin, open **Dashboard → Plugins** and go to the repository settings (the *Repositories* tab, or the
    ⚙ button on the *Catalog* page, depending on your Jellyfin version). Add a repository:
     - **Name:** `Hyperion Grabber`
-    - **URL:** `https://25lion52.github.io/JellyfinHyperionGrabber/manifest.json`
+    - **URL:** `https://mike-zaz.github.io/JellyfinHyperionGrabber/manifest.json`
 2. Open the **Catalog**, find **Hyperion Grabber** and click **Install**.
 3. Restart Jellyfin when asked.
 
@@ -49,5 +49,5 @@ picture, hold it during short pauses and go back to Hyperion's own sources after
 the lights lag behind the picture, set the **Light timing offset**
 ([how](user-guide/troubleshooting.md#the-lights-are-late-or-early)). If they do not, see
 [Troubleshooting](user-guide/troubleshooting.md#the-lights-do-not-follow-a-video).
-Follow the [roadmap](roadmap.md) or watch the [GitHub repository](https://github.com/25LioN52/JellyfinHyperionGrabber)
+Follow the [roadmap](roadmap.md) or watch the [GitHub repository](https://github.com/mike-zaz/JellyfinHyperionGrabber)
 for releases.
