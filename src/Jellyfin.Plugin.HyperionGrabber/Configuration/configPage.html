@@ -38,6 +38,9 @@
                         <div class="fieldDescription">Host name or IP address of the machine running Hyperion.ng or HyperHDR. If Jellyfin runs in Docker, <code>localhost</code> only works with host networking.</div>
                     </div>
 
+                    <button is="emby-button" type="button" id="HyperionDiscover" class="raised button-alt block"><span>Find Hyperion servers</span></button>
+                    <div id="HyperionDiscoverResult" class="fieldDescription" role="status" aria-live="polite" hidden></div>
+
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="HyperionPort">FlatBuffers port</label>
                         <input is="emby-input" type="number" id="HyperionPort" name="HyperionPort" required min="1" max="65535" />
