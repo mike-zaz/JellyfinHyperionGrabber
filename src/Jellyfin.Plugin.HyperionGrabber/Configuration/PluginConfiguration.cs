@@ -7,6 +7,7 @@ using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Core.Hyperion;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 using Jellyfin.Plugin.HyperionGrabber.Core.Streaming;
+using Jellyfin.Plugin.HyperionGrabber.Frames;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.HyperionGrabber.Configuration;
@@ -20,6 +21,9 @@ namespace Jellyfin.Plugin.HyperionGrabber.Configuration;
 /// </remarks>
 public class PluginConfiguration : BasePluginConfiguration
 {
+    /// <summary>The tag that skips a video unless the user picks another one.</summary>
+    internal const string DefaultExcludedTag = "nolights";
+
     /// <summary>Gets or sets the host name or IP address of the (first) Hyperion.ng / HyperHDR server.</summary>
     public string HyperionHost { get; set; } = string.Empty;
 
@@ -67,6 +71,24 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the users whose playback drives the lights. None selected means every user.</summary>
     [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Jellyfin deserializes the configuration (XML on disk, JSON from the configuration page), which needs a setter.")]
     public Collection<PlaybackUserSelection> PlaybackUsers { get; set; } = [];
+
+    /// <summary>Gets or sets the libraries whose videos never drive the lights.</summary>
+    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Jellyfin deserializes the configuration (XML on disk, JSON from the configuration page), which needs a setter.")]
+    public Collection<PlaybackLibrarySelection> ExcludedLibraries { get; set; } = [];
+
+    /// <summary>Gets or sets a tag that keeps a video (or an episode whose season or series has it) from driving the
+    /// lights, ignoring case; empty skips nothing.</summary>
+    public string ExcludedTag { get; set; } = DefaultExcludedTag;
+
+    /// <summary>Gets or sets a value indicating whether trailers and other extras drive the lights.</summary>
+    public bool FollowExtras { get; set; } = true;
+
+    /// <summary>Creates the exclusions described by these settings.</summary>
+    /// <returns>The exclusions.</returns>
+    public PlaybackExclusions ToExclusions() => new(
+        (ExcludedLibraries ?? []).Where(l => l is not null && Guid.TryParse(l.Id, out _)).Select(l => Guid.Parse(l.Id)).ToHashSet(),
+        ExcludedTag?.Trim() ?? string.Empty,
+        FollowExtras);
 
     /// <summary>Creates the streaming settings described by these settings.</summary>
     /// <returns>The settings.</returns>

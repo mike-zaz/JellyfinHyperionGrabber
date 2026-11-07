@@ -48,6 +48,7 @@ When playback is recognized (`Lights follow playback on …`), the next lines in
 | `Streaming 160x90 at 25 fps to Hyperion from …` | Streaming started | If the LEDs still do not change, see [Test pattern runs but the LEDs look wrong](#test-pattern-runs-but-the-leds-look-wrong): the same priority and device checks apply. |
 | `no Hyperion server is configured` | The host is empty | Enter the host on the plugin page and press **Save**. |
 | `The lights cannot follow playback: …` | A saved setting is invalid, or Jellyfin has no FFmpeg configured | Fix the named setting; check **Dashboard → Playback → Transcoding → FFmpeg path**. |
+| `The lights skip item …` | You chose to skip it: its library, a tag, or a trailer or extra | Change it under [Skip videos](configuration.md#skip-videos) if that was not intended. |
 | `The lights do not follow item … it is not a video from the library` | Live TV channel or music | Not supported: re-decoding Live TV would open a second tuner stream. |
 | `… is not a local file but a Http stream` | `.strm` file or another remote source | Not supported: only files Jellyfin reads from disk can be decoded a second time. |
 | `… folders and disc images are not supported yet` | DVD/Blu-ray folder or ISO | Remux to MKV, or wait for disc support. |

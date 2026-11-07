@@ -317,6 +317,21 @@ async function loadClients(view, selectedDevices, selectedUsers) {
         'No users yet.');
 }
 
+async function loadLibraries(view, excludedLibraries) {
+    let libraries = { Libraries: [] };
+    try {
+        libraries = await ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('HyperionGrabber/Libraries'), dataType: 'json' });
+    } catch {
+        showPlaybackResult(view, '✖ Could not load the libraries from Jellyfin. Saved selections are still shown.');
+    }
+
+    renderChoices(
+        view.querySelector('#ExcludedLibraryList'),
+        (libraries.Libraries || []).map(l => ({ Id: l.Id, Name: l.Name })),
+        excludedLibraries,
+        'No libraries yet.');
+}
+
 function formatPosition(seconds) {
     const total = Math.max(0, Math.floor(seconds));
     const hours = Math.floor(total / 3600);
@@ -472,6 +487,8 @@ export default function (view) {
             view.querySelector('#PauseReleaseSeconds').value = savedOrDefault(config.PauseReleaseSeconds, HyperionGrabberConfig.defaultPauseReleaseSeconds);
             view.querySelector('#KodiClockEnabled').checked = config.KodiClockEnabled !== false;
             view.querySelector('#KodiJsonRpcPort').value = savedOrDefault(config.KodiJsonRpcPort, HyperionGrabberConfig.defaultKodiPort);
+            view.querySelector('#FollowExtras').checked = config.FollowExtras !== false;
+            view.querySelector('#ExcludedTag').value = typeof config.ExcludedTag === 'string' ? config.ExcludedTag : 'nolights';
             view.querySelector('#AdditionalTargetList').replaceChildren();
             showAdditionalTargetResult(view, null);
             for (const target of config.AdditionalTargets || []) {
@@ -479,7 +496,10 @@ export default function (view) {
             }
 
             updateTargetCards(view);
-            return loadClients(view, config.PlaybackDevices || [], config.PlaybackUsers || []);
+            return Promise.all([
+                loadClients(view, config.PlaybackDevices || [], config.PlaybackUsers || []),
+                loadLibraries(view, config.ExcludedLibraries || [])
+            ]);
         }).then(function () {
             Dashboard.hideLoadingMsg();
         }).catch(function () {
@@ -541,6 +561,9 @@ export default function (view) {
         const pauseRelease = readInteger(view, '#PauseReleaseSeconds');
         const kodiClock = view.querySelector('#KodiClockEnabled').checked;
         const kodiPort = readInteger(view, '#KodiJsonRpcPort');
+        const followExtras = view.querySelector('#FollowExtras').checked;
+        const excludedTag = view.querySelector('#ExcludedTag').value.trim();
+        const excludedLibraries = readChoices(view.querySelector('#ExcludedLibraryList'));
         const fpsProblem = validateFramesPerSecond(framesPerSecond) || validateTiming(latencyOffset, pauseRelease) || validateKodiPort(kodiPort);
         if (fpsProblem) {
             showPlaybackResult(view, '✖ ' + fpsProblem);
@@ -568,6 +591,9 @@ export default function (view) {
             config.KodiJsonRpcPort = kodiPort;
             config.PlaybackDevices = devices;
             config.PlaybackUsers = users;
+            config.FollowExtras = followExtras;
+            config.ExcludedTag = excludedTag;
+            config.ExcludedLibraries = excludedLibraries;
             return ApiClient.updatePluginConfiguration(HyperionGrabberConfig.pluginUniqueId, config);
         }).then(function (result) {
             Dashboard.processPluginConfigurationUpdateResult(result);

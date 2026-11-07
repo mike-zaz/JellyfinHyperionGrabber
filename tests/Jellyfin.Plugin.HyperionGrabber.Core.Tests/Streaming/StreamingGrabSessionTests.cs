@@ -380,6 +380,21 @@ public sealed class StreamingGrabSessionTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Start_ExcludedVideo_SaysWhyAndDoesNotStream()
+    {
+        _video = VideoInputResult.Excluded("it has the tag nolights.");
+
+        var session = Start(State(TimeSpan.Zero));
+
+        Assert.False(await session.StreamingStarted.WaitAsync(Ct));
+        Assert.Empty(_sources);
+        Assert.Equal(0, _connects);
+        var status = session.GetStatus();
+        Assert.Equal((GrabSessionPhase.Stopped, "The lights skip this video: it has the tag nolights."), (status.Phase, status.Problem));
+        AssertLogged(LogLevel.Information, "The lights skip item");
+    }
+
+    [Fact]
     public async Task DecodingFailure_StopsAndReleasesHyperion()
     {
         var session = await StartStreamingAsync();

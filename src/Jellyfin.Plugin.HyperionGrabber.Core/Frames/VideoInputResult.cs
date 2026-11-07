@@ -8,10 +8,11 @@ namespace Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 /// </summary>
 public sealed record VideoInputResult
 {
-    private VideoInputResult(VideoInput? input, string? reason)
+    private VideoInputResult(VideoInput? input, string? reason, bool isExcluded = false)
     {
         Input = input;
         Reason = reason;
+        IsExcluded = isExcluded;
     }
 
     /// <summary>Gets the video to decode, when supported.</summary>
@@ -19,6 +20,10 @@ public sealed record VideoInputResult
 
     /// <summary>Gets why the item cannot drive the lights, when not supported (for the log).</summary>
     public string? Reason { get; }
+
+    /// <summary>Gets a value indicating whether the user chose to skip this video (an excluded library, a tag, an
+    /// extra), rather than it not being supported.</summary>
+    public bool IsExcluded { get; }
 
     /// <summary>Gets a value indicating whether <see cref="Input"/> is set.</summary>
     [MemberNotNullWhen(true, nameof(Input))]
@@ -41,5 +46,14 @@ public sealed record VideoInputResult
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         return new VideoInputResult(null, reason);
+    }
+
+    /// <summary>Creates a result for a video the user chose to skip.</summary>
+    /// <param name="reason">Why, completing "The lights skip this video: ...".</param>
+    /// <returns>The result.</returns>
+    public static VideoInputResult Excluded(string reason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        return new VideoInputResult(null, reason, isExcluded: true);
     }
 }

@@ -4,6 +4,7 @@ using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Frames;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Model.Dto;
@@ -50,6 +51,79 @@ public class JellyfinVideoInputResolverTests
         var result = Resolver().Resolve(ItemId, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
         Assert.Equal("file:/media/movie - 1080p.mkv", result.Input?.Path);
+    }
+
+    [Fact]
+    public void Resolve_VideoInAnExcludedLibrary_IsExcluded()
+    {
+        var library = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var movie = new Movie { Id = ItemId };
+        _libraryManager.GetItemById(ItemId).Returns(movie);
+        _libraryManager.GetCollectionFolders(movie).Returns(new List<Folder> { new() { Id = library, Name = "Kids" } });
+
+        var result = Resolver(new PlaybackExclusions(new HashSet<Guid> { library }, string.Empty, FollowExtras: true)).Resolve(ItemId, null);
+
+        Assert.Equal((false, true, "its library Kids is excluded."), (result.IsSupported, result.IsExcluded, result.Reason));
+    }
+
+    [Fact]
+    public void Resolve_VideoWithTheTag_IsExcluded_IgnoringCase()
+    {
+        _libraryManager.GetItemById(ItemId).Returns(new Movie { Id = ItemId, Tags = ["NoLights"] });
+
+        var result = Resolver(Exclusions(tag: "nolights")).Resolve(ItemId, null);
+
+        Assert.Equal((true, "it has the tag nolights."), (result.IsExcluded, result.Reason));
+    }
+
+    [Fact]
+    public void Resolve_EpisodeOfATaggedSeries_IsExcluded()
+    {
+        var seriesId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        _libraryManager.GetItemById(ItemId).Returns(new Episode { Id = ItemId, SeriesId = seriesId });
+        _libraryManager.GetItemById(seriesId).Returns(new Series { Id = seriesId, Name = "Bluey", Tags = ["nolights"] });
+
+        var result = Resolver(Exclusions(tag: "nolights")).Resolve(ItemId, null);
+
+        Assert.Equal((true, "Bluey has the tag nolights."), (result.IsExcluded, result.Reason));
+    }
+
+    [Fact]
+    public void Resolve_WithoutATag_IgnoresTags()
+    {
+        var movie = new Movie { Id = ItemId, Tags = ["nolights"] };
+        _libraryManager.GetItemById(ItemId).Returns(movie);
+        _mediaSourceManager.GetStaticMediaSources(movie, false).Returns([Source("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "/media/movie.mkv")]);
+
+        Assert.True(Resolver(Exclusions(tag: " ")).Resolve(ItemId, null).IsSupported);
+    }
+
+    [Fact]
+    public void Resolve_Trailer_WhenExtrasAreNotFollowed_IsExcluded()
+    {
+        _libraryManager.GetItemById(ItemId).Returns(new Trailer { Id = ItemId });
+
+        var result = Resolver(Exclusions(followExtras: false)).Resolve(ItemId, null);
+
+        Assert.Equal((true, "it is a trailer or another extra, and Follow trailers and extras is off."), (result.IsExcluded, result.Reason));
+    }
+
+    [Fact]
+    public void Resolve_BehindTheScenesExtra_WhenExtrasAreNotFollowed_IsExcluded()
+    {
+        _libraryManager.GetItemById(ItemId).Returns(new Video { Id = ItemId, ExtraType = ExtraType.BehindTheScenes });
+
+        Assert.True(Resolver(Exclusions(followExtras: false)).Resolve(ItemId, null).IsExcluded);
+    }
+
+    [Fact]
+    public void Resolve_Trailer_WhenExtrasAreFollowed_IsDecoded()
+    {
+        var trailer = new Trailer { Id = ItemId };
+        _libraryManager.GetItemById(ItemId).Returns(trailer);
+        _mediaSourceManager.GetStaticMediaSources(trailer, false).Returns([Source("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "/media/trailer.mkv")]);
+
+        Assert.True(Resolver(Exclusions(followExtras: true)).Resolve(ItemId, null).IsSupported);
     }
 
     [Theory]
@@ -267,5 +341,10 @@ public class JellyfinVideoInputResolverTests
         MediaStreams = [new MediaStream { Type = MediaStreamType.Video, Codec = "hevc", Width = 3840, Height = 1606 }],
     };
 
+    private static PlaybackExclusions Exclusions(string tag = "", bool followExtras = true)
+        => new(new HashSet<Guid>(), tag, followExtras);
+
     private JellyfinVideoInputResolver Resolver() => new(_libraryManager, _mediaSourceManager);
+
+    private JellyfinVideoInputResolver Resolver(PlaybackExclusions exclusions) => new(_libraryManager, _mediaSourceManager, () => exclusions);
 }

@@ -114,6 +114,23 @@
                         <span>Refresh</span>
                     </button>
                     <div id="PlaybackResult" class="fieldDescription" role="status" aria-live="polite" hidden></div>
+
+                    <h4>Skip videos</h4>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="FollowExtras" />
+                            <span>Follow trailers and extras</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Untick to keep the lights on Hyperion's default while trailers, behind-the-scenes and other extras play.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ExcludedTag">Tag that turns the lights off</label>
+                        <input is="emby-input" type="text" id="ExcludedTag" name="ExcludedTag" maxlength="100" autocomplete="off" placeholder="nolights" />
+                        <div class="fieldDescription">Videos with this tag (or episodes whose series or season has it) do not drive the lights. Add it in Jellyfin's metadata editor. Leave empty to skip no tagged videos.</div>
+                    </div>
+                    <h5>Libraries without lights</h5>
+                    <div id="ExcludedLibraryList" class="checkboxList"></div>
+                    <div class="fieldDescription">Videos in the ticked libraries never drive the lights, for example a children's or a music video library.</div>
                 </div>
 
                 <div class="verticalSection">

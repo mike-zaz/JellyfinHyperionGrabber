@@ -321,8 +321,17 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         var video = _factory.Resolver.Resolve(state.ItemId, state.MediaSourceId);
         if (!video.IsSupported)
         {
-            Log.Unsupported(_logger, state.ItemId, video.Reason);
-            SetStopped("This video is not supported: " + video.Reason);
+            if (video.IsExcluded)
+            {
+                Log.Excluded(_logger, state.ItemId, video.Reason);
+                SetStopped("The lights skip this video: " + video.Reason);
+            }
+            else
+            {
+                Log.Unsupported(_logger, state.ItemId, video.Reason);
+                SetStopped("This video is not supported: " + video.Reason);
+            }
+
             return null;
         }
 
@@ -1040,5 +1049,8 @@ internal sealed partial class StreamingGrabSession : IGrabSession
 
         [LoggerMessage(EventId = 26, Level = LogLevel.Warning, Message = "Dolby Vision profile 5 video: {ToneMapper} maps its brightness, but only Jellyfin's FFmpeg (tonemapx) gets its colors right")]
         public static partial void DolbyVisionWithoutTonemapx(ILogger logger, HdrToneMapper toneMapper);
+
+        [LoggerMessage(EventId = 27, Level = LogLevel.Information, Message = "The lights skip item {ItemId}: {Reason}")]
+        public static partial void Excluded(ILogger logger, Guid itemId, string reason);
     }
 }
