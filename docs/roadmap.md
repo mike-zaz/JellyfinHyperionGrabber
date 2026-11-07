@@ -32,7 +32,8 @@ Milestones are deliberately small so each one ships something usable. Items beco
       gets more precise with every report *(shipped in 0.4)*
 - [x] Release the lights after a long pause (default 15 s), resume at the playback position *(shipped in 0.3)*
 - [x] Light timing offset (ms), one value for all devices *(shipped in 0.3)*
-- [ ] Per-device timing offset, with a calibration video and guide
+- [x] Per-device timing offset, with a calibration video and guide
+      ([Calibrating the timing](user-guide/configuration.md#calibrating-the-timing))
 - [x] Precise clock for Kodi clients via Kodi's JSON-RPC (position and events in real time) *(shipped in 0.7)*
 - [ ] Playback speed changes
 

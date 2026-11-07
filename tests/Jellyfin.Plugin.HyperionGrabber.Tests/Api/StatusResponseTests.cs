@@ -118,10 +118,27 @@ public class StatusResponseTests
         Assert.Equal(picture, Describe(session, "x").Picture);
     }
 
+    [Theory]
+    [InlineData(300, true, "300 ms earlier, set for Living room TV")]
+    [InlineData(-150, false, "150 ms later, the general setting")]
+    [InlineData(0, false, "0 ms, the general setting")]
+    public void Target_WhilePlaying_DescribesTheLightOffset(int milliseconds, bool isDevice, string description)
+    {
+        var session = new GrabSessionStatus { Phase = GrabSessionPhase.Streaming, LatencyOffset = TimeSpan.FromMilliseconds(milliseconds), IsDeviceLatencyOffset = isDevice };
+
+        Assert.Equal(description, Describe(session, "x").LightOffset);
+    }
+
     [Fact]
     public void Target_BeforeTheVideoIsKnown_HasNoPicture()
     {
         Assert.Null(Describe(new GrabSessionStatus { Phase = GrabSessionPhase.Starting }, "x").Picture);
+    }
+
+    [Fact]
+    public void Target_BeforeThePlaybackIsPrepared_HasNoLightOffset()
+    {
+        Assert.Null(Describe(new GrabSessionStatus { Phase = GrabSessionPhase.Starting }, "x").LightOffset);
     }
 
     [Fact]
