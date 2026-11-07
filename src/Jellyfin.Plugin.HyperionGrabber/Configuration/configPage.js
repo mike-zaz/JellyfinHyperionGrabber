@@ -385,7 +385,8 @@ function describeStatus(status) {
     }
 
     if (typeof status.PositionSeconds === 'number') {
-        lines.push(`Position: ${formatPosition(status.PositionSeconds)} (±${status.PositionUncertaintySeconds.toFixed(1)} s)`);
+        const speed = typeof status.PlaybackSpeed === 'number' ? `, at ${status.PlaybackSpeed}× speed` : '';
+        lines.push(`Position: ${formatPosition(status.PositionSeconds)} (±${status.PositionUncertaintySeconds.toFixed(1)} s)${speed}`);
     }
 
     if (status.Timing) {

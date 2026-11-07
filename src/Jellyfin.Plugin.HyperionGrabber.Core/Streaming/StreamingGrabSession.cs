@@ -104,6 +104,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private long _positionTicks;
     private long _uncertaintyTicks;
     private long _milliFramesPerSecond;
+    private long _milliPlaybackRate = 1000;
     private int _targetFramesPerSecond;
     private int _decoder; // HardwareAcceleration + 1; 0 while no decoder runs.
     private int _requestedDecoder; // HardwareAcceleration + 1.
@@ -203,6 +204,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
             LastProblem = Volatile.Read(ref _lastProblem),
             Position = TimeSpan.FromTicks(Interlocked.Read(ref _positionTicks)),
             PositionUncertainty = TimeSpan.FromTicks(Interlocked.Read(ref _uncertaintyTicks)),
+            PlaybackRate = Interlocked.Read(ref _milliPlaybackRate) / 1000.0,
             FramesPerSecond = Interlocked.Read(ref _milliFramesPerSecond) / 1000.0,
             TargetFramesPerSecond = Volatile.Read(ref _targetFramesPerSecond),
             FramesSent = FramesSent,
@@ -568,6 +570,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         var sent = FramesSent;
         Interlocked.Exchange(ref _milliFramesPerSecond, (long)Math.Round((sent - _statusWindowSent) * 1000.0 / elapsed.TotalSeconds));
         Interlocked.Exchange(ref _positionTicks, Math.Max(_tracker.Estimate(now).Ticks, 0));
+        Interlocked.Exchange(ref _milliPlaybackRate, (long)Math.Round(_tracker.Rate * 1000));
         PublishDecoder();
         _statusWindowStart = now;
         _statusWindowSent = sent;

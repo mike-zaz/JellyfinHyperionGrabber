@@ -10,4 +10,6 @@ namespace Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 /// <param name="IsPaused">Whether the player was paused.</param>
 /// <param name="At">When the player showed it (the middle of the request's round trip).</param>
 /// <param name="Uncertainty">How far the real position at <paramref name="At"/> may be from <paramref name="Position"/>.</param>
-internal sealed record ClockReading(TimeSpan Position, bool IsPaused, DateTimeOffset At, TimeSpan Uncertainty);
+/// <param name="Speed">The player's speed: 0 paused, 1 normal (Kodi also at another tempo), 2 or more fast forward,
+/// below 0 rewind.</param>
+internal sealed record ClockReading(TimeSpan Position, bool IsPaused, DateTimeOffset At, TimeSpan Uncertainty, double Speed = 1);

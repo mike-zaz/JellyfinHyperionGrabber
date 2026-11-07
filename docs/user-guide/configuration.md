@@ -13,7 +13,7 @@ page is open. With [several Hyperion servers](#more-tvs) each one gets its own e
 | First line | What happens now: waiting for playback, starting, streaming, paused, the lights released after a long pause, reconnecting to Hyperion, or why the lights do not follow the current playback. If **Follow playback** is off or no device is selected, it says so. |
 | ✖ … | What keeps the lights from following playback right now, for example `Hyperion is unreachable: Could not connect …`. |
 | Playing | The video and the device that drive the lights. |
-| Position | Where the plugin thinks the playback is, and how far off that can be (±). With the Jellyfin add-on for Kodi the ± shrinks with every pause, resume and seek. |
+| Position | Where the plugin thinks the playback is, and how far off that can be (±). With the Jellyfin add-on for Kodi the ± shrinks with every pause, resume and seek. At another [playback speed](#playback-speed) it adds, for example, `at 1.5× speed`. |
 | Pictures | Pictures sent to Hyperion per second compared to the frame rate you set, how many were sent and dropped, and how often decoding restarted (seeks). Many drops or a rate well below the setting mean the server, the network or Hyperion cannot keep up. |
 | Timing | Where the position comes from: **Kodi's clock** when the plugin reads it from Kodi, otherwise the client's reports to Jellyfin (with the reason if Kodi's clock cannot be used). |
 | Light timing offset | The offset this playback uses, for example `120 ms earlier, set for Living room TV` or `0 ms, the general setting`. See [Calibrating the timing](#calibrating-the-timing). |
@@ -67,6 +67,21 @@ The plugin only reads where the video is; it never controls Kodi. Kodi's remote 
 so with this setting on, any device on your network can control Kodi; that is how Kodi works. The **Timing** line of
 the [status](#status) shows whether Kodi's clock is used. Without the setting, or when Kodi cannot be reached (a
 firewall, or Jellyfin seeing a proxy instead of the Kodi device), the plugin uses Jellyfin's reports as before.
+
+### Playback speed
+
+The lights follow playback speeds from 0.25× to 2×, for example a talk at 1.5× in the web player. There is nothing to
+set:
+
+- **Kodi** (with [Kodi's clock](#kodis-clock)): the plugin reads Kodi's position every 2 seconds and measures the tempo
+  from it, so after you change the tempo the lights catch up within about 10 seconds. Fast forward and rewind hold the
+  picture; the lights continue where normal playback resumes.
+- **Other apps** do not tell Jellyfin their speed. The plugin measures it from their position reports: after you
+  change the speed, the lights catch up within about 20 seconds (two reports), with one or two short jumps on the
+  way. A seek is never taken for a speed change.
+
+The plugin still sends pictures at the frame rate you set, so at 1.5× a third of the decoded pictures (at 2× half)
+show up as dropped in the [status](#status); that is expected.
 
 ### HDR and Dolby Vision
 
