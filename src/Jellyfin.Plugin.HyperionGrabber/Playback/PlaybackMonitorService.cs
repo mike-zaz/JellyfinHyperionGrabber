@@ -50,6 +50,9 @@ internal sealed partial class PlaybackMonitorService : IHostedService, IPlayback
     public PlaybackMonitorStatus GetStatus() => Monitor.GetStatus();
 
     /// <inheritdoc />
+    public PreviewPicture? GetPreview(int targetIndex) => Monitor.GetPreview(targetIndex);
+
+    /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
     {
         Monitor.UpdateFilter(_filterSource.GetCurrent());

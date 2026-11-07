@@ -52,6 +52,20 @@ public sealed class KodiClockTests : IAsyncDisposable
         Assert.Equal($"Kodi's clock at 127.0.0.1:{_server.Port}.", clock.Description);
     }
 
+    [Theory]
+    [InlineData(2)] // Fast forward (Kodi says 1 at any tempo; the tracker measures that).
+    [InlineData(8)]
+    [InlineData(-2)] // Rewind.
+    public async Task ReadsTheSpeedFromKodi(double speed)
+    {
+        _server.Speed = speed;
+
+        var clock = Start();
+
+        await TestHelpers.WaitUntilAsync(() => clock.Latest is not null);
+        Assert.Equal((speed, false), (clock.Latest!.Speed, clock.Latest.IsPaused));
+    }
+
     [Fact]
     public async Task ReadsAgainRightAfterKodiAnnouncesAPause()
     {

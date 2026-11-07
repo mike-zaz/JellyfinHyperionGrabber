@@ -154,6 +154,28 @@ public sealed class PlaybackMonitorTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetPreview_WhilePlaying_IsTheSessionsPicture()
+    {
+        await SetFilterAsync(TestFilters.OneTarget(true, ["kodi"], []));
+        await PostAsync(Event(PlaybackEventKind.Started, "s1", "kodi"));
+        var picture = new PreviewPicture(2, 1, new byte[] { 1, 2, 3, 4, 5, 6 });
+        Assert.Single(_factory.Sessions).Preview = picture;
+
+        Assert.Same(picture, _monitor.GetPreview(0));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(1)]
+    public async Task GetPreview_WithoutPlaybackOrServer_IsNull(int targetIndex)
+    {
+        await SetFilterAsync(TestFilters.OneTarget(true, ["kodi"], []));
+
+        Assert.Null(_monitor.GetPreview(targetIndex));
+    }
+
+    [Fact]
     public async Task GetStatus_AfterTheSessionStopped_KeepsItsLastProblem()
     {
         await SetFilterAsync(TestFilters.OneTarget(true, ["kodi"], []));

@@ -30,6 +30,36 @@ Hyperion can run on the same machine as Jellyfin (for example both in Docker on 
 a Raspberry Pi. Either works; the plugin only needs a TCP connection to port 19400. When Jellyfin runs in Docker,
 read the [Docker notes](installation.md#docker-notes) to pick the right host name.
 
+### No Hyperion yet?
+
+If your LEDs work today without Hyperion (for example a WLED strip controlled from its app), add HyperHDR or
+Hyperion.ng first:
+
+- **A PC, Mac or Raspberry Pi:** install HyperHDR from its official packages on the
+  [HyperHDR releases page](https://github.com/awawa-dev/HyperHDR/releases), or Hyperion.ng from the
+  [Hyperion.ng releases page](https://github.com/hyperion-project/hyperion.ng/releases).
+- **Next to Jellyfin in Docker** (a Linux host with an Intel or AMD CPU, such as most NAS): neither project publishes
+  an official image, so build the one the plugin's own end-to-end tests run against. It is HyperHDR 22 from the official
+  release package, checked against its SHA-256. Save this as `docker-compose.yml` and run `docker compose up -d`:
+
+    ```yaml
+    services:
+      hyperhdr:
+        build: https://github.com/mike-zaz/JellyfinHyperionGrabber.git#main:tests/e2e/hyperhdr
+        container_name: hyperhdr
+        network_mode: host   # web UI on port 8090, FlatBuffers on 19400; lets HyperHDR find WLED and Hue
+        volumes:
+          - hyperhdr:/home/hyperhdr   # settings, LED layout and devices survive updates
+        restart: unless-stopped
+
+    volumes:
+      hyperhdr:
+    ```
+
+    Then open `http://<nas-address>:8090`, add your LED device (WLED, Philips Hue, ...) under **LED Hardware**, and
+    enter the NAS address with port `19400` in the plugin. To update later, run `docker compose build --pull` and
+    `docker compose up -d`.
+
 ## LED layout
 
 Hyperion maps the picture to LEDs through the **LED layout**: for every LED, a rectangle of the picture whose average

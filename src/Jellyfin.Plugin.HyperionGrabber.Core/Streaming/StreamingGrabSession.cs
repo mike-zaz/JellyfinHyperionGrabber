@@ -24,8 +24,9 @@ namespace Jellyfin.Plugin.HyperionGrabber.Core.Streaming;
 /// with time unless paused) and sends the newest decoded frame at or before it. Older due frames are dropped, so a slow
 /// Hyperion, network or decoder means fewer frames, never a queue. The frame source pools its buffers; while none is
 /// free, FFmpeg blocks.</para>
-/// <para>The light timing offset (<see cref="StreamingSettings.LatencyOffset"/>) is added to that estimate, so frames are
-/// decoded and sent earlier (positive) or later (negative) to cancel the delay of the client, Hyperion and the LEDs.</para>
+/// <para>The light timing offset is added to that estimate, so frames are decoded and sent earlier (positive) or later
+/// (negative) to cancel the delay of the client, Hyperion and the LEDs. It is the device's own offset on this target
+/// (<see cref="PlaybackTarget.LatencyOffsets"/>), otherwise the general one (<see cref="StreamingSettings.LatencyOffset"/>).</para>
 /// <para>While no new frame is due (pause, end of the video, slow decoder) the last frame is resent every
 /// <see cref="KeepAliveInterval"/>, because Hyperion.ng and HyperHDR close FlatBuffers connections that stay silent.
 /// After a pause longer than <see cref="StreamingSettings.PauseRelease"/>, FFmpeg is stopped and the Hyperion connection
@@ -88,6 +89,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private readonly TaskCompletionSource _hyperionReleased = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Task _previousHyperionReleased;
     private readonly PositionTracker _tracker; // Owned by the run task.
+    private readonly Lock _previewLock = new(); // Guards _lastFrame's contents and size for GetPreview.
     private PlaybackState _state;
     private Task _run = Task.CompletedTask;
     private long _framesSent;
@@ -103,12 +105,14 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private long _positionTicks;
     private long _uncertaintyTicks;
     private long _milliFramesPerSecond;
+    private long _milliPlaybackRate = 1000;
     private int _targetFramesPerSecond;
     private int _decoder; // HardwareAcceleration + 1; 0 while no decoder runs.
     private int _requestedDecoder; // HardwareAcceleration + 1.
     private IPlaybackClock? _clock;
     private string? _clockNote; // Why the clock's readings are not used, when they disagree.
     private PictureFormat? _picture;
+    private LatencyOffsetInUse? _latencyOffsetInUse;
 
     // Owned by the run task.
     private DateTimeOffset _statusWindowStart;
@@ -127,6 +131,8 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private TimeSpan _latencyOffset;
     private byte[] _lastFrame = [];
     private bool _hasLastFrame;
+    private int _previewWidth;
+    private int _previewHeight;
     private DateTimeOffset _lastSentAt;
     private DateTimeOffset? _pausedSince;
     private bool _releasedForPause;
@@ -190,9 +196,19 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     }
 
     /// <inheritdoc />
+    public PreviewPicture? GetPreview()
+    {
+        lock (_previewLock)
+        {
+            return _hasLastFrame ? new PreviewPicture(_previewWidth, _previewHeight, _lastFrame.AsSpan().ToArray()) : null;
+        }
+    }
+
+    /// <inheritdoc />
     public GrabSessionStatus GetStatus()
     {
         var decoder = Volatile.Read(ref _decoder);
+        var latencyOffset = Volatile.Read(ref _latencyOffsetInUse);
         return new GrabSessionStatus
         {
             Phase = (GrabSessionPhase)Volatile.Read(ref _phase),
@@ -200,6 +216,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
             LastProblem = Volatile.Read(ref _lastProblem),
             Position = TimeSpan.FromTicks(Interlocked.Read(ref _positionTicks)),
             PositionUncertainty = TimeSpan.FromTicks(Interlocked.Read(ref _uncertaintyTicks)),
+            PlaybackRate = Interlocked.Read(ref _milliPlaybackRate) / 1000.0,
             FramesPerSecond = Interlocked.Read(ref _milliFramesPerSecond) / 1000.0,
             TargetFramesPerSecond = Volatile.Read(ref _targetFramesPerSecond),
             FramesSent = FramesSent,
@@ -210,6 +227,8 @@ internal sealed partial class StreamingGrabSession : IGrabSession
                 && Volatile.Read(ref _requestedDecoder) > (int)HardwareAcceleration.None + 1,
             TimingSource = Volatile.Read(ref _clock) is { } clock ? Volatile.Read(ref _clockNote) ?? clock.Description : null,
             Picture = Volatile.Read(ref _picture),
+            LatencyOffset = latencyOffset?.Offset,
+            IsDeviceLatencyOffset = latencyOffset?.IsDevice == true,
         };
     }
 
@@ -310,6 +329,13 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         }
 
         IReadOnlyList<string> errors = [.. hyperion.GetValidationErrors(), .. settings.GetValidationErrors()];
+        var hasDeviceOffset = _target.LatencyOffsets.TryGetValue(state.DeviceId, out var deviceOffset);
+        if (hasDeviceOffset && deviceOffset.Duration() > StreamingSettings.MaxLatencyOffset)
+        {
+            var device = string.IsNullOrWhiteSpace(state.DeviceName) ? "this device" : state.DeviceName;
+            errors = [.. errors, string.Create(CultureInfo.InvariantCulture, $"The light timing offset of {device} must be between -{StreamingSettings.MaxLatencyOffset.TotalMilliseconds:0} and {StreamingSettings.MaxLatencyOffset.TotalMilliseconds:0} ms.")];
+        }
+
         if (errors.Count > 0)
         {
             var problems = string.Join(" ", errors);
@@ -364,7 +390,9 @@ internal sealed partial class StreamingGrabSession : IGrabSession
             }
         }
 
-        return new Plan(hyperion, frames, settings.LatencyOffset, settings.PauseRelease, clock);
+        var latencyOffset = hasDeviceOffset ? deviceOffset : settings.LatencyOffset;
+        Volatile.Write(ref _latencyOffsetInUse, new LatencyOffsetInUse(latencyOffset, hasDeviceOffset));
+        return new Plan(hyperion, frames, latencyOffset, settings.PauseRelease, clock);
     }
 
     /// <summary>Logs how an HDR video is mapped to SDR, once per playback.</summary>
@@ -394,8 +422,13 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         var options = plan.Frames;
         var interval = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / options.FramesPerSecond);
         _latencyOffset = plan.LatencyOffset;
-        _lastFrame = new byte[options.FrameLength];
-        _hasLastFrame = false;
+        lock (_previewLock)
+        {
+            _lastFrame = new byte[options.FrameLength];
+            _hasLastFrame = false;
+            (_previewWidth, _previewHeight) = (options.OutputWidth, options.OutputHeight);
+        }
+
         _lastSentAt = DateTimeOffset.MinValue;
         Volatile.Write(ref _targetFramesPerSecond, options.FramesPerSecond);
         Volatile.Write(ref _requestedDecoder, (int)options.HardwareAcceleration + 1);
@@ -475,8 +508,12 @@ internal sealed partial class StreamingGrabSession : IGrabSession
                     isNewFrame = due is not null;
                     if (due is not null)
                     {
-                        due.Rgb24.Span.CopyTo(_lastFrame);
-                        _hasLastFrame = true;
+                        // Uncontended unless the live preview copies the frame at this moment.
+                        lock (_previewLock)
+                        {
+                            due.Rgb24.Span.CopyTo(_lastFrame);
+                            _hasLastFrame = true;
+                        }
                     }
                     else if (!_hasLastFrame || now - _lastSentAt < KeepAliveInterval)
                     {
@@ -563,6 +600,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         var sent = FramesSent;
         Interlocked.Exchange(ref _milliFramesPerSecond, (long)Math.Round((sent - _statusWindowSent) * 1000.0 / elapsed.TotalSeconds));
         Interlocked.Exchange(ref _positionTicks, Math.Max(_tracker.Estimate(now).Ticks, 0));
+        Interlocked.Exchange(ref _milliPlaybackRate, (long)Math.Round(_tracker.Rate * 1000));
         PublishDecoder();
         _statusWindowStart = now;
         _statusWindowSent = sent;
@@ -969,6 +1007,9 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     }
 
     private sealed record Plan(HyperionClientOptions Hyperion, FfmpegFrameSourceOptions Frames, TimeSpan LatencyOffset, TimeSpan PauseRelease, KodiClockOptions? Clock);
+
+    /// <summary>The light timing offset a playback uses, for the status: the device's own or the general one.</summary>
+    private sealed record LatencyOffsetInUse(TimeSpan Offset, bool IsDevice);
 
     private static partial class Log
     {

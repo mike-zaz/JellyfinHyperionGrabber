@@ -72,6 +72,14 @@ body:
         - Not sure
 
   - type: textarea
+    id: status
+    attributes:
+      label: Status panel
+      description: |
+        The **Status** section at the top of the plugin page (Dashboard → Plugins → Hyperion Grabber) while the problem
+        happens: what the lights are doing, the picture, the timing and the last problem. Paste its text or a screenshot.
+
+  - type: textarea
     id: logs
     attributes:
       label: Logs

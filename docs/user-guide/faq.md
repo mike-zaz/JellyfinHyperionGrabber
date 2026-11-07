@@ -45,7 +45,8 @@ releases its Hyperion priority and Hyperion shows its default until you resume; 
 on resume. When playback stops, the priority is released at once.
 
 **The lights are slightly late. Can I fix that?**
-Yes: set **Light timing offset (ms)** on the plugin page. See [Lights are late or early](troubleshooting.md#the-lights-are-late-or-early).
+Yes: set **Light timing offset (ms)** on the plugin page, for all devices or per device. The
+[timing test video](configuration.md#calibrating-the-timing) helps to find the value.
 
 **Is anything sent to the internet?**
 No. The plugin connects to the Hyperion server you configure and, for playback in Kodi, to that Kodi device on

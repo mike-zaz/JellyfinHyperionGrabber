@@ -60,6 +60,16 @@ public class HyperionGrabberController : ControllerBase
     }
 
     /// <summary>
+    /// Copies the picture last sent to a Hyperion server, for the live preview. The configuration page polls it a few
+    /// times a second while the preview is on.
+    /// </summary>
+    /// <param name="target">The server's position in the status, 0 for the first.</param>
+    /// <returns>The picture; <c>Available = false</c> while nothing plays on that server.</returns>
+    [HttpGet("Preview")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<PreviewResponse> GetPreview([FromQuery] int target = 0) => Ok(PreviewResponse.From(_status.GetPreview(target)));
+
+    /// <summary>
     /// Lists the devices and users of Jellyfin's recent sessions, to choose which playback drives the lights.
     /// </summary>
     /// <returns>Devices (most recently active first) and users.</returns>

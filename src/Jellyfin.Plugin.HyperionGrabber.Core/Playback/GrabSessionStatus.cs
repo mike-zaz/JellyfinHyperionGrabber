@@ -23,6 +23,10 @@ public sealed record GrabSessionStatus
     /// <summary>Gets how far <see cref="Position"/> may be off, from the precision of the client's reports.</summary>
     public TimeSpan PositionUncertainty { get; init; }
 
+    /// <summary>Gets the playback speed the position moves at (1 = normal), from the player's clock or measured from
+    /// the client's reports.</summary>
+    public double PlaybackRate { get; init; } = 1;
+
     /// <summary>Gets the pictures sent to Hyperion per second, over the last second.</summary>
     public double FramesPerSecond { get; init; }
 
@@ -50,4 +54,11 @@ public sealed record GrabSessionStatus
     /// <summary>Gets where the position comes from besides the client's reports (for example "Kodi's clock at ..."),
     /// or why that is not used; <see langword="null"/> when the session only uses the client's reports.</summary>
     public string? TimingSource { get; init; }
+
+    /// <summary>Gets the light timing offset the playback uses, once it started; positive shows the picture earlier.</summary>
+    public TimeSpan? LatencyOffset { get; init; }
+
+    /// <summary>Gets a value indicating whether <see cref="LatencyOffset"/> is the device's own offset rather than the
+    /// general one.</summary>
+    public bool IsDeviceLatencyOffset { get; init; }
 }

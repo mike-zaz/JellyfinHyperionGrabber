@@ -1,7 +1,8 @@
 # Getting started
 
 Five minutes from zero to a working LED test. You need a running Jellyfin server (10.11.x or 12.x) and a running
-Hyperion.ng or HyperHDR with your LEDs already working (for example with one of Hyperion's own effects).
+Hyperion.ng or HyperHDR with your LEDs already working (for example with one of Hyperion's own effects). No Hyperion
+yet? See [No Hyperion yet?](user-guide/hyperion-setup.md#no-hyperion-yet), including a Docker setup next to Jellyfin.
 
 ## 1. Install the plugin
 
