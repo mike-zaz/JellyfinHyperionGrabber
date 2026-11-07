@@ -20,6 +20,11 @@ page is open. With [several Hyperion servers](#more-tvs) each one gets its own e
 | Picture | The size of the picture sent to Hyperion, and for HDR video how it becomes SDR, for example `160×90, HDR10, tone mapped to SDR with zscale`. See [HDR and Dolby Vision](#hdr-and-dolby-vision). |
 | Last problem | The most recent problem with its time, also after it was resolved (for example a Hyperion restart during the last movie). |
 
+**Show live preview** under the status draws the picture the plugin sends to each Hyperion server, about four times a
+second, while a video plays: the small picture Hyperion turns into LED colors with its layout and calibration. It is
+handy to check colors, black bars and HDR tone mapping, and to tell whether a problem is in the picture or in Hyperion.
+**Hide live preview** (or leaving the page) stops it.
+
 ## Hyperion server
 
 | Setting | Default | Description |

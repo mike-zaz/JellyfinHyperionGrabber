@@ -23,4 +23,9 @@ public interface IGrabSession : IAsyncDisposable
     /// <summary>Describes what the session is doing. Safe to call from any thread, also after disposal; returns at once.</summary>
     /// <returns>A snapshot.</returns>
     GrabSessionStatus GetStatus();
+
+    /// <summary>Copies the picture last sent to the target, for the live preview. Safe to call from any thread, also
+    /// after disposal; returns at once.</summary>
+    /// <returns>The picture, or <see langword="null"/> while there is none (not started, released after a pause).</returns>
+    PreviewPicture? GetPreview() => null;
 }

@@ -14,7 +14,8 @@ const HyperionGrabberConfig = {
     defaultPort: 19400,
     defaultPriority: 150,
     maxTargets: 8,
-    statusRefreshMilliseconds: 2000
+    statusRefreshMilliseconds: 2000,
+    previewRefreshMilliseconds: 250
 };
 
 const noDevicesText = 'No devices yet. Start playing something on your TV, then press Refresh.';
@@ -371,6 +372,7 @@ function listItem(text) {
 // With one Hyperion server the panel looks as it always did; with several, each gets its own entry.
 function renderStatus(view, status) {
     const targets = status.Targets || [];
+    view.hyperionTargetNames = targets.map(target => target.Name);
     const single = targets.length === 1 ? targets[0] : null;
     view.querySelector('#HyperionStatusSummary').textContent = status.Summary;
     const problem = view.querySelector('#HyperionStatusProblem');
@@ -453,9 +455,132 @@ function stopStatusRefresh(view) {
     view.hyperionStatusRefresh = null;
 }
 
+// Draws a picture from the preview endpoint (RGB24 as base64) onto a canvas.
+function drawPreview(canvas, preview) {
+    const bytes = atob(preview.Pixels);
+    canvas.width = preview.Width;
+    canvas.height = preview.Height;
+    const context = canvas.getContext('2d');
+    const image = context.createImageData(preview.Width, preview.Height);
+    for (let source = 0, target = 0; source + 2 < bytes.length; source += 3, target += 4) {
+        image.data[target] = bytes.charCodeAt(source);
+        image.data[target + 1] = bytes.charCodeAt(source + 1);
+        image.data[target + 2] = bytes.charCodeAt(source + 2);
+        image.data[target + 3] = 255;
+    }
+
+    context.putImageData(image, 0, 0);
+}
+
+// One entry per Hyperion server: a caption and a canvas.
+function previewEntry(list, index) {
+    let entry = list.children[index];
+    if (!entry) {
+        entry = document.createElement('div');
+        entry.innerHTML = '<div class="fieldDescription"></div><canvas></canvas>';
+        const canvas = entry.querySelector('canvas');
+        canvas.style.width = '100%';
+        canvas.style.maxWidth = '480px';
+        list.append(entry);
+    }
+
+    return entry;
+}
+
+// Server names come from the configuration, so they are only ever set as text.
+async function loadPreviews(view) {
+    const names = view.hyperionTargetNames || [];
+    const count = Math.max(1, names.length);
+    const list = view.querySelector('#PreviewList');
+    while (list.children.length > count) {
+        list.lastElementChild.remove();
+    }
+
+    for (let index = 0; index < count; index++) {
+        const entry = previewEntry(list, index);
+        const caption = entry.querySelector('div');
+        const canvas = entry.querySelector('canvas');
+        const url = ApiClient.getUrl('HyperionGrabber/Preview');
+        let preview = null;
+        try {
+            preview = await ApiClient.ajax({ type: 'GET', url: `${url}${url.includes('?') ? '&' : '?'}target=${index}`, dataType: 'json' });
+        } catch {
+            preview = null;
+        }
+
+        const several = names.length > 1;
+        if (preview && preview.Available) {
+            caption.textContent = several ? names[index] : '';
+            caption.hidden = !several;
+            canvas.hidden = false;
+            drawPreview(canvas, preview);
+        } else {
+            caption.textContent = several ? `${names[index]}: nothing to show while no video plays.` : 'Nothing to show while no video plays.';
+            caption.hidden = false;
+            canvas.hidden = true;
+        }
+    }
+}
+
+// Polls like the status: only while the preview is on and the browser tab is visible; one request at a time.
+function startPreview(view) {
+    stopPreview(view);
+    const preview = { active: true, loading: false, timer: 0 };
+    const tick = async () => {
+        preview.timer = 0;
+        if (!preview.active || preview.loading || document.hidden) {
+            return;
+        }
+
+        preview.loading = true;
+        try {
+            await loadPreviews(view);
+        } finally {
+            preview.loading = false;
+        }
+
+        if (preview.active && !document.hidden) {
+            preview.timer = setTimeout(tick, HyperionGrabberConfig.previewRefreshMilliseconds);
+        }
+    };
+    preview.onVisibilityChange = () => {
+        if (!document.hidden && !preview.timer) {
+            tick();
+        }
+    };
+    document.addEventListener('visibilitychange', preview.onVisibilityChange);
+    view.hyperionPreview = preview;
+    view.querySelector('#PreviewList').hidden = false;
+    view.querySelector('#PreviewToggle span').textContent = 'Hide live preview';
+    tick();
+}
+
+function stopPreview(view) {
+    const preview = view.hyperionPreview;
+    if (!preview) {
+        return;
+    }
+
+    preview.active = false;
+    clearTimeout(preview.timer);
+    document.removeEventListener('visibilitychange', preview.onVisibilityChange);
+    view.hyperionPreview = null;
+    view.querySelector('#PreviewList').hidden = true;
+    view.querySelector('#PreviewToggle span').textContent = 'Show live preview';
+}
+
 export default function (view) {
     view.addEventListener('viewhide', function () {
         stopStatusRefresh(view);
+        stopPreview(view);
+    });
+
+    view.querySelector('#PreviewToggle').addEventListener('click', function () {
+        if (view.hyperionPreview) {
+            stopPreview(view);
+        } else {
+            startPreview(view);
+        }
     });
 
     view.addEventListener('viewshow', function () {

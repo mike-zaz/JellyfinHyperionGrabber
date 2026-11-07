@@ -119,6 +119,30 @@ public sealed class StreamingGrabSessionTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Preview_BeforeAPictureWasSent_IsNull()
+    {
+        var session = await StartStreamingAsync();
+
+        Assert.Null(session.GetPreview());
+    }
+
+    [Fact]
+    public async Task Preview_IsACopyOfTheLastPictureSent()
+    {
+        var session = await StartStreamingAsync();
+        Source.Push(5);
+        await TickAsync(session, 2);
+
+        var preview = session.GetPreview();
+
+        Assert.NotNull(preview);
+        Assert.Equal((160, 90, 160 * 90 * 3), (preview.Width, preview.Height, preview.Rgb24.Length));
+        Assert.Equal(2, preview.Rgb24.Span[0]); // Frame 2 was the last one sent.
+        await TickAsync(session);
+        Assert.Equal(2, preview.Rgb24.Span[0]); // A copy: later frames do not change it.
+    }
+
+    [Fact]
     public async Task SlowHyperion_FramesThatBecameLateAreDroppedNotQueued()
     {
         var session = await StartStreamingAsync();

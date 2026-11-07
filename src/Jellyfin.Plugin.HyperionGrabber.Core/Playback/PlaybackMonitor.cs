@@ -147,6 +147,20 @@ public sealed partial class PlaybackMonitor : IAsyncDisposable, IPlaybackStatusS
         return new PlaybackMonitorStatus(filter.Enabled, filter.UserIds.Count, targets);
     }
 
+    /// <inheritdoc />
+    public PreviewPicture? GetPreview(int targetIndex)
+    {
+        var targets = Filter.Targets;
+        if (targetIndex < 0 || targetIndex >= targets.Count)
+        {
+            return null;
+        }
+
+        return Volatile.Read(ref _published).TryGetValue(targets[targetIndex].Key, out var state)
+            ? state.Playback?.Session.GetPreview()
+            : null;
+    }
+
     private static ProblemReport? Latest(ProblemReport? first, ProblemReport? second)
         => first is null ? second : second is null || first.Time >= second.Time ? first : second;
 

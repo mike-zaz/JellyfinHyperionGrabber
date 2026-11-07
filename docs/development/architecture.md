@@ -167,6 +167,12 @@ followed playback when a session starts or stops and keeps the last problem of a
 page polls `GET HyperionGrabber/Status` every 2 s while it is shown and the browser tab is visible, one request at a
 time, and stops when the page is left. All values are set as text (device and item names come from clients).
 
+**Live preview.** `GET HyperionGrabber/Preview?target=n` returns the picture last sent to that Hyperion server as
+base64 RGB24 (about 58 KB of JSON at 160×90). The session copies each sent frame into its keep-alive buffer under a
+lock that only the preview also takes, so per frame it is an uncontended lock and no allocation; the copy for the
+preview is made only when the page asks. The page polls it every 250 ms while **Show live preview** is on, the page is
+shown and the browser tab is visible, one request at a time, and draws it on a canvas.
+
 Still planned: a per-device timing offset (M2). See the [roadmap](../roadmap.md).
 
 ## Threading
