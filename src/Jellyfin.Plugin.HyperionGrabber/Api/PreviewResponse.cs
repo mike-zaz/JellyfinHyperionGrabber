@@ -17,8 +17,11 @@ public sealed record PreviewResponse
     /// <summary>Gets the height in pixels.</summary>
     public int Height { get; init; }
 
-    /// <summary>Gets the pixels as base64: 3 bytes (red, green, blue) each, row by row from the top-left corner.</summary>
-    public string Pixels { get; init; } = string.Empty;
+    /// <summary>Gets the pixels, 3 bytes (red, green, blue) each, row by row from the top-left corner; JSON carries them
+    /// as base64.</summary>
+    /// <remarks>System.Text.Json writes the base64 straight into the response. A base64 string would be 115-154 KB, on
+    /// the large object heap, for every request while the preview is shown.</remarks>
+    public ReadOnlyMemory<byte> Pixels { get; init; }
 
     /// <summary>Creates the response.</summary>
     /// <param name="picture">The picture, or <see langword="null"/> when there is none.</param>
@@ -30,6 +33,6 @@ public sealed record PreviewResponse
             Available = true,
             Width = picture.Width,
             Height = picture.Height,
-            Pixels = Convert.ToBase64String(picture.Rgb24.Span),
+            Pixels = picture.Rgb24,
         };
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Jellyfin.Plugin.HyperionGrabber.Api;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 using Xunit;
@@ -11,7 +12,9 @@ public class PreviewResponseTests
     {
         var response = PreviewResponse.From(new PreviewPicture(2, 1, new byte[] { 255, 0, 0, 0, 0, 255 }));
 
-        Assert.Equal((true, 2, 1, "/wAAAAD/"), (response.Available, response.Width, response.Height, response.Pixels));
+        Assert.Equal(
+            """{"Available":true,"Width":2,"Height":1,"Pixels":"/wAAAAD/"}""",
+            JsonSerializer.Serialize(response));
     }
 
     [Fact]
@@ -19,6 +22,8 @@ public class PreviewResponseTests
     {
         var response = PreviewResponse.From(null);
 
-        Assert.Equal((false, 0, 0, string.Empty), (response.Available, response.Width, response.Height, response.Pixels));
+        Assert.Equal(
+            """{"Available":false,"Width":0,"Height":0,"Pixels":""}""",
+            JsonSerializer.Serialize(response));
     }
 }
