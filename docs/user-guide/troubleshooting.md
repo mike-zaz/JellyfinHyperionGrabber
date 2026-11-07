@@ -13,6 +13,7 @@ Start with the **Status** section and **Test connection** on the plugin page: th
 | `did not confirm the registration … Is this the FlatBuffers port` | Something answered, but it is not a FlatBuffers server | You probably entered the web UI port (8090) or JSON-RPC port (19444). Use 19400. |
 | `rejected the registration: The priority … range` | Priority outside 100-199 | Use a priority between 100 and 199 (default 150). |
 | `Request failed (401)` / `(403)` | Not signed in as an administrator | Plugin settings are admin-only. |
+| **Find Hyperion servers**: `No server answered` | The search (SSDP multicast) does not reach Hyperion: Jellyfin in Docker with bridge networking, another network or VLAN, or a firewall blocking UDP port 1900 | Enter the address yourself. To use the search, run Jellyfin with host networking or on the same network as Hyperion. |
 
 ## Test pattern runs but the LEDs look wrong
 

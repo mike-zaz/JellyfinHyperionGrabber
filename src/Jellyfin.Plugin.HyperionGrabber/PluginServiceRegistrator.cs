@@ -1,5 +1,6 @@
 using System;
 using Jellyfin.Plugin.HyperionGrabber.Core.Diagnostics;
+using Jellyfin.Plugin.HyperionGrabber.Core.Discovery;
 using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 using Jellyfin.Plugin.HyperionGrabber.Core.Streaming;
@@ -22,6 +23,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         serviceCollection.TryAddSingleton(TimeProvider.System);
         serviceCollection.AddSingleton<HyperionConnectionTester>();
+        serviceCollection.AddSingleton<HyperionDiscovery>();
         serviceCollection.AddSingleton<IFfmpegSettingsProvider, JellyfinFfmpegSettingsProvider>();
         serviceCollection.AddSingleton<IVideoInputResolver, JellyfinVideoInputResolver>();
         serviceCollection.AddSingleton<IStreamingSettingsProvider, PluginStreamingSettingsProvider>();

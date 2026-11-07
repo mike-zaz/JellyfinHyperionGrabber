@@ -169,6 +169,16 @@ time, and stops when the page is left. All values are set as text (device and it
 
 Still planned: a per-device timing offset (M2). See the [roadmap](../roadmap.md).
 
+## Finding Hyperion servers (M4)
+
+`Core/Discovery/HyperionDiscovery` sends one SSDP `M-SEARCH` per kind to 239.255.255.250:1900
+(`urn:hyperion-project.org:device:basic:1`, `urn:hyperhdr.eu:device:basic:1`, as in both projects' `ssdp` sources)
+and collects answers for 2 s, at most 16 servers, one per USN. HyperHDR's answer carries `HYPERHDR-FBS-PORT` and
+`HYPERHDR-NAME`. For Hyperion.ng the port and name come from its description document (`LOCATION`), which is fetched
+only when it is on the address that answered, with redirects off, a 2 s timeout and at most 64 KB. So a device on the
+network can make the server read only from itself, and the XML is read with DTDs prohibited. `POST HyperionGrabber/Discover` (admin
+only) runs it; nothing runs in the background.
+
 ## Threading
 
 - Sends on a `HyperionClient` are serialized with a `SemaphoreSlim`; one receive loop per client drains replies.

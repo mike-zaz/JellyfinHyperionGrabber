@@ -31,6 +31,8 @@ const targetCardMarkup = `
     <input is="emby-input" type="text" class="targetHost" label="Host" autocomplete="off" placeholder="192.168.1.21" />
     <div class="fieldDescription">The Hyperion.ng or HyperHDR server of this TV.</div>
 </div>
+<button is="emby-button" type="button" class="raised button-alt block targetDiscover"><span>Find Hyperion servers</span></button>
+<div class="fieldDescription targetDiscoverResult" role="status" aria-live="polite" hidden></div>
 <div class="inputContainer">
     <input is="emby-input" type="number" class="targetPort" label="FlatBuffers port" min="1" max="65535" />
 </div>
@@ -215,6 +217,39 @@ function wireTestButtons(readTargetNow, result, testConnection, testPattern) {
     });
 }
 
+// Searches the network and lists each server with a Use button that hands it to apply(server). Names come from devices
+// on the network, so they are only ever set as text.
+function wireDiscoverButton(button, result, apply) {
+    button.addEventListener('click', async function () {
+        button.disabled = true;
+        result.hidden = false;
+        result.textContent = 'Searching the network for Hyperion.ng and HyperHDR…';
+        try {
+            const response = await postAction('HyperionGrabber/Discover', {});
+            const servers = (response && response.Servers) || [];
+            if (servers.length === 0) {
+                result.textContent = response && response.Success === false
+                    ? '✖ ' + response.Message
+                    : '✖ No server answered. Check that Hyperion runs on this network; with Jellyfin in Docker the search needs host networking. You can always enter the address yourself.';
+                return;
+            }
+
+            result.replaceChildren(...servers.map(server => {
+                const row = document.createElement('div');
+                row.innerHTML = '<span></span> <button is="emby-button" type="button" class="raised button-alt"><span>Use</span></button>';
+                row.querySelector('span').textContent = `${server.Kind} “${server.Name}” at ${server.Host}:${server.Port}`;
+                row.querySelector('button').addEventListener('click', function () {
+                    apply(server);
+                    result.textContent = `✔ Using ${server.Host}:${server.Port}. Press Save to keep it.`;
+                });
+                return row;
+            }));
+        } finally {
+            button.disabled = false;
+        }
+    });
+}
+
 // Numbers the cards after the first server and allows adding only up to the limit.
 function updateTargetCards(view) {
     const cards = targetCards(view);
@@ -235,6 +270,13 @@ function addTargetCard(view, target) {
     card.querySelector('.targetPriority').value = target.Priority || HyperionGrabberConfig.defaultPriority;
     renderChoices(card.querySelector('.targetDevices'), view.hyperionOfferedDevices || [], target.Devices || [], noDevicesText);
     wireTestButtons(() => readCardTarget(card), card.querySelector('.targetResult'), card.querySelector('.targetTestConnection'), card.querySelector('.targetTestPattern'));
+    wireDiscoverButton(card.querySelector('.targetDiscover'), card.querySelector('.targetDiscoverResult'), function (server) {
+        card.querySelector('.targetHost').value = server.Host;
+        card.querySelector('.targetPort').value = server.Port;
+        if (!card.querySelector('.targetName').value.trim()) {
+            card.querySelector('.targetName').value = server.Name;
+        }
+    });
     card.querySelector('.targetRemove').addEventListener('click', function () {
         card.remove();
         updateTargetCards(view);
@@ -493,6 +535,14 @@ export default function (view) {
         view.querySelector('#HyperionResult'),
         view.querySelector('#HyperionTestConnection'),
         view.querySelector('#HyperionTestPattern'));
+
+    wireDiscoverButton(view.querySelector('#HyperionDiscover'), view.querySelector('#HyperionDiscoverResult'), function (server) {
+        view.querySelector('#HyperionHost').value = server.Host;
+        view.querySelector('#HyperionPort').value = server.Port;
+        if (!view.querySelector('#HyperionName').value.trim()) {
+            view.querySelector('#HyperionName').value = server.Name;
+        }
+    });
 
     view.querySelector('#AddTarget').addEventListener('click', function () {
         showAdditionalTargetResult(view, null);

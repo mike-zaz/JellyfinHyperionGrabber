@@ -29,6 +29,12 @@ page is open. With [several Hyperion servers](#more-tvs) each one gets its own e
 | **FlatBuffers port** | `19400` | Port of Hyperion's FlatBuffers server. Not the web UI port (8090) and not the JSON-RPC port (19444). |
 | **Priority** | `150` | Hyperion priority of the Jellyfin picture, 100-199. Lower numbers win. |
 
+**Find Hyperion servers** searches the network for about two seconds and lists every Hyperion.ng and HyperHDR server
+that answers, with its name, address and FlatBuffers port; **Use** fills in host and port (and the name, if empty).
+Press **Save** to keep them. The search uses SSDP multicast, which both servers answer. It only reaches the network the
+Jellyfin server is on: with Jellyfin in Docker it needs host networking. When nothing is found, enter the address
+yourself; everything else works the same.
+
 ### Choosing a priority
 
 Hyperion shows the source with the **lowest** priority number that is active. Typical values:

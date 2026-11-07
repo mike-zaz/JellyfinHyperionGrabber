@@ -4,6 +4,7 @@ using System.Net.Mime;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.HyperionGrabber.Core.Diagnostics;
+using Jellyfin.Plugin.HyperionGrabber.Core.Discovery;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 using MediaBrowser.Common.Api;
 using MediaBrowser.Controller.Library;
@@ -66,6 +67,20 @@ public class HyperionGrabberController : ControllerBase
     [HttpGet("Clients")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<PlaybackClientsResponse> GetClients() => Ok(PlaybackClientsResponse.From(_sessionManager.Sessions));
+
+    /// <summary>
+    /// Searches the local network for Hyperion.ng and HyperHDR servers (SSDP, about two seconds).
+    /// </summary>
+    /// <param name="discovery">Runs the search.</param>
+    /// <param name="cancellationToken">Aborted when the client disconnects.</param>
+    /// <returns>The servers that answered.</returns>
+    [HttpPost("Discover")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<DiscoveryResponse>> Discover([FromServices] HyperionDiscovery discovery, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(discovery);
+        return Ok(DiscoveryResponse.From(await discovery.DiscoverAsync(cancellationToken).ConfigureAwait(false)));
+    }
 
     /// <summary>
     /// Connects to Hyperion, registers the priority and disconnects.

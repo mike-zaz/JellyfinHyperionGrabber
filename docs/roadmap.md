@@ -47,7 +47,8 @@ Milestones are deliberately small so each one ships something usable. Items beco
 
 ## M4: Polish
 
-- [ ] Auto-discovery of Hyperion.ng / HyperHDR on the network (mDNS/SSDP)
+- [x] Auto-discovery of Hyperion.ng / HyperHDR on the network (SSDP, which both answer)
+      ([Hyperion server](user-guide/configuration.md#hyperion-server))
 - [ ] Live LED preview on the config page
 - [ ] Per-library / per-item opt-out, intros and trailers handling
 - [ ] Localization of the config page

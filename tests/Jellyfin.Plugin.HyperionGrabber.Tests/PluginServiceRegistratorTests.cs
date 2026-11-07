@@ -1,5 +1,6 @@
 using System.Linq;
 using Jellyfin.Plugin.HyperionGrabber.Core.Diagnostics;
+using Jellyfin.Plugin.HyperionGrabber.Core.Discovery;
 using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 using Jellyfin.Plugin.HyperionGrabber.Core.Streaming;
@@ -35,6 +36,7 @@ public class PluginServiceRegistratorTests
         Assert.IsType<JellyfinVideoInputResolver>(provider.GetRequiredService<IVideoInputResolver>());
         Assert.IsType<PluginStreamingSettingsProvider>(provider.GetRequiredService<IStreamingSettingsProvider>());
         Assert.NotNull(provider.GetRequiredService<HyperionConnectionTester>());
+        Assert.NotNull(provider.GetRequiredService<HyperionDiscovery>());
     }
 
     private static ServiceProvider BuildProvider()
