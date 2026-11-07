@@ -7,7 +7,7 @@ the rules below are explicit and apply to humans and agents equally.
 
 - **Test on your setup** and report what works: client app, Jellyfin version, Hyperion.ng/HyperHDR version, LED
   devices. Compatibility reports are as valuable as code.
-- **Report bugs** with the [bug form](https://github.com/25LioN52/JellyfinHyperionGrabber/issues/new/choose).
+- **Report bugs** with the [bug form](https://github.com/mike-zaz/JellyfinHyperionGrabber/issues/new/choose).
 - **Improve the docs**: every page has an edit button.
 - **Pick an issue** labelled `good first issue` or `help wanted`, or comment on one to claim it.
 

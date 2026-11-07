@@ -61,5 +61,5 @@ The maintainer's test setup, useful if you have similar hardware:
 | LEDs | WLED, 90 LEDs; Philips Hue |
 | Client | Kodi with Jellyfin add-on on LibreELEC, Raspberry Pi |
 
-Tested your setup? Tell us in [Discussions](https://github.com/25LioN52/JellyfinHyperionGrabber/discussions) and we
+Tested your setup? Tell us in [Discussions](https://github.com/mike-zaz/JellyfinHyperionGrabber/discussions) and we
 will add it here.

@@ -10,7 +10,7 @@
     <Product>Hyperion Grabber for Jellyfin</Product>
     <Copyright>Copyright (c) Mike Zazharskyi and JellyfinHyperionGrabber contributors</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/25LioN52/JellyfinHyperionGrabber</RepositoryUrl>
+    <RepositoryUrl>https://github.com/mike-zaz/JellyfinHyperionGrabber</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

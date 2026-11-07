@@ -1,6 +1,6 @@
 name: Docs & plugin repository
 
-# Publishes https://25lion52.github.io/JellyfinHyperionGrabber/ : the documentation site plus manifest.json,
+# Publishes https://mike-zaz.github.io/JellyfinHyperionGrabber/ : the documentation site plus manifest.json,
 # the Jellyfin plugin repository. The manifest is regenerated from the GitHub releases on every deployment.
 
 on:
@@ -56,7 +56,7 @@ jobs:
             gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern manifest-versions.json --dir "release-manifests/$tag"
             if ($LASTEXITCODE -ne 0) { Write-Warning "Release $tag has no manifest-versions.json; skipped." }
           }
-          ./build/New-PluginManifest.ps1 -VersionsDirectory release-manifests -OutputPath site/manifest.json
+          ./build/New-PluginManifest.ps1 -VersionsDirectory release-manifests -OutputPath site/manifest.json -Repository $env:GITHUB_REPOSITORY
           exit 0
 
       - name: Upload site

@@ -14,7 +14,7 @@
     ./build/package.ps1 -Version 0.1.0
 
 .EXAMPLE
-    ./build/package.ps1 -Version 0.1.0 -SourceUrlBase https://github.com/25LioN52/JellyfinHyperionGrabber/releases/download/v0.1.0 -ChangelogFile notes.md
+    ./build/package.ps1 -Version 0.1.0 -SourceUrlBase https://github.com/mike-zaz/JellyfinHyperionGrabber/releases/download/v0.1.0 -ChangelogFile notes.md
 #>
 [CmdletBinding()]
 param(

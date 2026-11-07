@@ -43,8 +43,10 @@ Each zip contains only `Jellyfin.Plugin.HyperionGrabber.dll`, `Jellyfin.Plugin.H
 
 ## Plugin repository
 
-`https://25lion52.github.io/JellyfinHyperionGrabber/manifest.json` is generated, never committed. To rebuild it
-(for example after deleting a broken release), run the *Docs & plugin repository* workflow manually.
+`https://mike-zaz.github.io/JellyfinHyperionGrabber/manifest.json` is generated, never committed. To rebuild it
+(for example after deleting a broken release), run the *Docs & plugin repository* workflow manually. Its download
+links always point to the current repository, also for releases made before the account was renamed from
+`25LioN52`: GitHub redirects an old account name only until someone else takes it.
 
 ## Required checks on the release PR
 

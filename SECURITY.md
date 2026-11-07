@@ -8,7 +8,7 @@ supported Jellyfin line (currently 10.11.x and 12.x).
 ## Reporting a vulnerability
 
 Please **do not open a public issue**. Report privately through
-[GitHub security advisories](https://github.com/25LioN52/JellyfinHyperionGrabber/security/advisories/new).
+[GitHub security advisories](https://github.com/mike-zaz/JellyfinHyperionGrabber/security/advisories/new).
 Include the plugin and Jellyfin versions, what an attacker can do, and steps to reproduce.
 
 You can expect a first response within 7 days. Confirmed issues are fixed in a new release and disclosed in a
