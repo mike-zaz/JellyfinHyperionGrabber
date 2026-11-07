@@ -561,9 +561,6 @@ export default function (view) {
         const pauseRelease = readInteger(view, '#PauseReleaseSeconds');
         const kodiClock = view.querySelector('#KodiClockEnabled').checked;
         const kodiPort = readInteger(view, '#KodiJsonRpcPort');
-        const followExtras = view.querySelector('#FollowExtras').checked;
-        const excludedTag = view.querySelector('#ExcludedTag').value.trim();
-        const excludedLibraries = readChoices(view.querySelector('#ExcludedLibraryList'));
         const fpsProblem = validateFramesPerSecond(framesPerSecond) || validateTiming(latencyOffset, pauseRelease) || validateKodiPort(kodiPort);
         if (fpsProblem) {
             showPlaybackResult(view, '✖ ' + fpsProblem);
@@ -575,6 +572,9 @@ export default function (view) {
             return false;
         }
 
+        const followExtras = view.querySelector('#FollowExtras').checked;
+        const excludedTag = view.querySelector('#ExcludedTag').value.trim();
+        const excludedLibraries = readChoices(view.querySelector('#ExcludedLibraryList'));
         showPlaybackResult(view, null);
         Dashboard.showLoadingMsg();
         ApiClient.getPluginConfiguration(HyperionGrabberConfig.pluginUniqueId).then(function (config) {
