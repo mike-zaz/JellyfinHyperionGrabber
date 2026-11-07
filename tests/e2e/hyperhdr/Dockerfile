@@ -1,6 +1,8 @@
 # HyperHDR from the project's official GitHub release, for the end-to-end tests
 # (tests/Jellyfin.Plugin.HyperionGrabber.Core.Tests/EndToEnd, docs/development/testing.md).
-# Throwaway only: the tests reconfigure the LED layout and add an instance.
+# The test containers are throwaway: the tests reconfigure the LED layout and add an instance. The user guide also
+# tells people to build this image to run HyperHDR next to Jellyfin (docs/user-guide/hyperion-setup.md, "No Hyperion
+# yet?"), with their settings in a volume on /home/hyperhdr; keep that path and the ports when changing this file.
 #
 #   docker build -t hyperhdr-e2e tests/e2e/hyperhdr
 #   docker run -d --rm --name hyperhdr-e2e -p 127.0.0.1:19400:19400 -p 127.0.0.1:19444:19444 hyperhdr-e2e
