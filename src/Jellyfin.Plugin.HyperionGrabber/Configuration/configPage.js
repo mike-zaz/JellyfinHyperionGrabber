@@ -292,11 +292,16 @@ function renderChoices(list, offered, selected, emptyText, withOffset = false) {
             offset.className = 'inputContainer deviceOffsetContainer';
             offset.innerHTML = deviceOffsetMarkup;
             const savedOffset = saved ? saved.LatencyOffsetMilliseconds : null;
-            offset.querySelector('.deviceOffset').value = Number.isInteger(savedOffset) ? savedOffset : '';
-            offset.hidden = !input.checked;
-            input.addEventListener('change', function () {
+            const box = offset.querySelector('.deviceOffset');
+            box.value = Number.isInteger(savedOffset) ? savedOffset : '';
+            // Hidden and disabled together: a disabled box is left out of the form's validation, so a value left in
+            // an unticked device's box cannot block Save without a visible message.
+            const showOffset = () => {
                 offset.hidden = !input.checked;
-            });
+                box.disabled = !input.checked;
+            };
+            showOffset();
+            input.addEventListener('change', showOffset);
             list.append(offset);
         }
     }
