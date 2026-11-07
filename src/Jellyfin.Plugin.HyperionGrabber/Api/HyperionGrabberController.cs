@@ -69,20 +69,6 @@ public class HyperionGrabberController : ControllerBase
     public ActionResult<PlaybackClientsResponse> GetClients() => Ok(PlaybackClientsResponse.From(_sessionManager.Sessions));
 
     /// <summary>
-    /// Searches the local network for Hyperion.ng and HyperHDR servers (SSDP, about two seconds).
-    /// </summary>
-    /// <param name="discovery">Runs the search.</param>
-    /// <param name="cancellationToken">Aborted when the client disconnects.</param>
-    /// <returns>The servers that answered.</returns>
-    [HttpPost("Discover")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<DiscoveryResponse>> Discover([FromServices] HyperionDiscovery discovery, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(discovery);
-        return Ok(DiscoveryResponse.From(await discovery.DiscoverAsync(cancellationToken).ConfigureAwait(false)));
-    }
-
-    /// <summary>
     /// Connects to Hyperion, registers the priority and disconnects.
     /// </summary>
     /// <param name="request">Server to test.</param>
@@ -136,5 +122,19 @@ public class HyperionGrabberController : ControllerBase
 
         var result = await _tester.SendTestPatternAsync(options, patternOptions, cancellationToken).ConfigureAwait(false);
         return Ok(HyperionTestResponse.From(result));
+    }
+
+    /// <summary>
+    /// Searches the local network for Hyperion.ng and HyperHDR servers (SSDP, about two seconds).
+    /// </summary>
+    /// <param name="discovery">Runs the search.</param>
+    /// <param name="cancellationToken">Aborted when the client disconnects.</param>
+    /// <returns>The servers that answered.</returns>
+    [HttpPost("Discover")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<DiscoveryResponse>> Discover([FromServices] HyperionDiscovery discovery, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(discovery);
+        return Ok(DiscoveryResponse.From(await discovery.DiscoverAsync(cancellationToken).ConfigureAwait(false)));
     }
 }
