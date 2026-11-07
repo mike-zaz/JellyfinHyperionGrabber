@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 
@@ -72,6 +73,9 @@ public sealed record TargetStatusResponse
     /// <summary>Gets where the position comes from, in words (Kodi's clock, or the client's reports and why).</summary>
     public string? Timing { get; init; }
 
+    /// <summary>Gets the light timing offset the playback uses, in words, and whether it is the device's own.</summary>
+    public string? LightOffset { get; init; }
+
     /// <summary>Gets the most recent problem, also after it was resolved.</summary>
     public string? LastProblem { get; init; }
 
@@ -126,7 +130,20 @@ public sealed record TargetStatusResponse
             HardwareFallback = session.IsHardwareFallback,
             Picture = session.Picture is { } picture ? DescribePicture(picture) : null,
             Timing = session.TimingSource ?? "The client's reports to Jellyfin.",
+            LightOffset = session.LatencyOffset is { } offset ? DescribeLightOffset(offset, session.IsDeviceLatencyOffset, playback.DeviceName) : null,
         };
+    }
+
+    private static string DescribeLightOffset(TimeSpan offset, bool isDevice, string device)
+    {
+        var milliseconds = (int)Math.Round(offset.TotalMilliseconds);
+        var value = milliseconds switch
+        {
+            > 0 => string.Create(CultureInfo.InvariantCulture, $"{milliseconds} ms earlier"),
+            < 0 => string.Create(CultureInfo.InvariantCulture, $"{-milliseconds} ms later"),
+            _ => "0 ms",
+        };
+        return isDevice ? $"{value}, set for {device}" : $"{value}, the general setting";
     }
 
     private static string Summarize(GrabSessionPhase phase, string device, string video) => phase switch

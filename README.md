@@ -19,8 +19,9 @@ LED device they support. No capture card, no app on the TV.
 
 > [!NOTE]
 > **Early preview (v0.x).** The current version streams library videos to Hyperion/HyperHDR while they play on the
-> devices you select (one Hyperion server per TV), tone maps HDR and Dolby Vision, and plays an LED layout test
-> pattern. Per-device latency calibration is next, see the [roadmap](https://mike-zaz.github.io/JellyfinHyperionGrabber/roadmap/).
+> devices you select (one Hyperion server per TV), tone maps HDR and Dolby Vision, plays an LED layout test pattern,
+> and has a timing offset per device with a test video to calibrate it. See the
+> [roadmap](https://mike-zaz.github.io/JellyfinHyperionGrabber/roadmap/) for what is next.
 
 ## Why
 

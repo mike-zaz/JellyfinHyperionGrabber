@@ -7,8 +7,8 @@ the TV.
 
 !!! note "Early preview"
     Version 0.x streams library videos to Hyperion/HyperHDR while they play on the devices you select (one Hyperion
-    server per TV), tone maps HDR10, HLG and Dolby Vision, and plays an LED layout test pattern to set up your LEDs.
-    Per-device latency calibration is next; see the [roadmap](roadmap.md).
+    server per TV), tone maps HDR10, HLG and Dolby Vision, plays an LED layout test pattern to set up your LEDs, and
+    has a timing offset per device with a test video to calibrate it. See the [roadmap](roadmap.md) for what is next.
 
 <div class="grid cards" markdown>
 
@@ -26,7 +26,7 @@ the TV.
 | Extra hardware | Capture card, splitter | None |
 | Clients | One TV or box | Any Jellyfin client (Kodi/LibreELEC, Android TV, webOS, Tizen, web) |
 | HDR / DRM content | Often washed out or blocked | Decoded from the file; HDR10, HLG and Dolby Vision tone mapped to SDR |
-| Latency | Always behind the picture | Frames are ready early; a timing offset compensates the LED latency (per device *(planned)*) |
+| Latency | Always behind the picture | Frames are ready early; a timing offset (per device if needed) compensates the LED latency |
 | LED layout | Hyperion | Hyperion (unchanged) |
 
 ## How it fits together

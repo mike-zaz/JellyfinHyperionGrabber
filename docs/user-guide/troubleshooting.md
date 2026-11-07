@@ -120,10 +120,13 @@ smoothing, the network and the LED controller each add a little delay, and the s
 with Kodi on a Raspberry Pi and WLED is not unusual). Because the server decodes ahead of the TV, the plugin can send
 pictures early to cancel it:
 
-1. Play a video with clear scene cuts and watch when the LEDs change compared to the TV.
+1. Play the [timing test video](configuration.md#calibrating-the-timing) (or a video with clear scene cuts) and watch
+   when the LEDs change compared to the TV.
 2. Lights change **after** the picture: set **Light timing offset (ms)** to a positive value, for example `500`;
-   **before** the picture: a negative value.
-3. Save, start the video again (the offset applies from the next playback) and adjust in steps of 100-200 ms.
+   **before** the picture: a negative value. When only one TV or player is off, give that device its own offset
+   under **Devices** instead.
+3. Save, start the video again (the offset applies from the next playback) and adjust in steps of 100-200 ms. The
+   status line **Light timing offset** shows the value in use.
 
 Also check Hyperion's own delay: **Configuration → Image Processing → Smoothing** (Hyperion.ng) adds its smoothing
 time and any *update delay* to every change. A shorter smoothing time or an update delay of 0 makes the lights react

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -313,6 +314,44 @@ public sealed class StreamingGrabSessionTests : IAsyncDisposable
 
         Assert.Single(_sources);
         Assert.Equal(0, session.Restarts);
+    }
+
+    [Fact]
+    public async Task DeviceLatencyOffset_ReplacesTheGeneralOne()
+    {
+        _settings = _settings with { LatencyOffset = TimeSpan.FromMilliseconds(900) };
+        _target = PlaybackTarget.Create("TV", new HyperionClientOptions { Host = "hyperion.local" }, ["kodi"], [KeyValuePair.Create("kodi", TimeSpan.FromMilliseconds(300))]);
+
+        var session = await StartStreamingAsync();
+
+        Assert.Equal(TimeSpan.FromMilliseconds(300), Source.Options.StartPosition);
+        var status = session.GetStatus();
+        Assert.Equal((TimeSpan.FromMilliseconds(300), true), (status.LatencyOffset, status.IsDeviceLatencyOffset));
+    }
+
+    [Fact]
+    public async Task WithoutADeviceOffset_TheGeneralOneIsUsedAndReported()
+    {
+        _settings = _settings with { LatencyOffset = TimeSpan.FromMilliseconds(300) };
+        _target = PlaybackTarget.Create("TV", new HyperionClientOptions { Host = "hyperion.local" }, ["kodi", "shield"], [KeyValuePair.Create("shield", TimeSpan.FromMilliseconds(-200))]);
+
+        var session = await StartStreamingAsync();
+
+        Assert.Equal(TimeSpan.FromMilliseconds(300), Source.Options.StartPosition);
+        var status = session.GetStatus();
+        Assert.Equal((TimeSpan.FromMilliseconds(300), false), (status.LatencyOffset, status.IsDeviceLatencyOffset));
+    }
+
+    [Fact]
+    public async Task Start_WithAnInvalidDeviceOffset_LogsAndDoesNotStream()
+    {
+        _target = PlaybackTarget.Create("TV", new HyperionClientOptions { Host = "hyperion.local" }, ["kodi"], [KeyValuePair.Create("kodi", TimeSpan.FromSeconds(3))]);
+
+        var session = Start(State(TimeSpan.Zero));
+
+        Assert.False(await session.StreamingStarted.WaitAsync(Ct));
+        Assert.Empty(_sources);
+        AssertLogged(LogLevel.Warning, "The light timing offset of Living room must be between -2000 and 2000 ms.");
     }
 
     [Fact]
