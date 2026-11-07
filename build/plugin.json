@@ -5,6 +5,7 @@
   "description": "Ambilight for any Jellyfin client. Decodes the video that is playing on any Jellyfin client and streams small frames to Hyperion.ng or HyperHDR over FlatBuffers, so your LEDs (WLED, Philips Hue and everything else Hyperion supports) follow the picture. LED layout, colors and smoothing stay in Hyperion. Works with any client, including Kodi on LibreELEC, Android TV, webOS, Tizen and browsers; no HDMI capture hardware needed. HDR10, HLG and Dolby Vision are tone mapped to SDR.",
   "owner": "Mike Zazharskyi",
   "category": "General",
+  "imageUrl": "https://mike-zaz.github.io/JellyfinHyperionGrabber/assets/plugin-image.jpg",
   "artifacts": [
     "Jellyfin.Plugin.HyperionGrabber.dll",
     "Jellyfin.Plugin.HyperionGrabber.Core.dll"

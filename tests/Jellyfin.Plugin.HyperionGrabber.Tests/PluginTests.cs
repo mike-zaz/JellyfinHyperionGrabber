@@ -38,6 +38,18 @@ public class PluginTests
     }
 
     [Fact]
+    public void PackagingMetadata_ImageIsPublishedWithTheSite()
+    {
+        // Jellyfin shows imageUrl in the catalog and downloads it when it installs the plugin; the site serves docs/.
+        using var metadata = JsonDocument.Parse(RepositoryFiles.ReadAllText("build/plugin.json"));
+        var siteUrl = Regex.Match(RepositoryFiles.ReadAllText("mkdocs.yml"), @"^site_url:\s*(\S+)", RegexOptions.Multiline).Groups[1].Value;
+        var imageUrl = metadata.RootElement.TryGetProperty("imageUrl", out var image) ? image.GetString() ?? string.Empty : string.Empty;
+
+        Assert.StartsWith(siteUrl, imageUrl, StringComparison.Ordinal);
+        Assert.True(RepositoryFiles.Exists("docs/" + imageUrl[siteUrl.Length..]), $"{imageUrl} is not under docs/.");
+    }
+
+    [Fact]
     public void GetPages_PointAtEmbeddedResources()
     {
         var pages = CreatePlugin().GetPages().ToList();

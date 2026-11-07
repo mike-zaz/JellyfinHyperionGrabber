@@ -48,6 +48,11 @@ Each zip contains only `Jellyfin.Plugin.HyperionGrabber.dll`, `Jellyfin.Plugin.H
 links always point to the current repository, also for releases made before the account was renamed from
 `25LioN52`: GitHub redirects an old account name only until someone else takes it.
 
+The plugin's picture in Jellyfin's catalog is `imageUrl` in `build/plugin.json`, served from `docs/assets/` with the
+site (16:9, like the pictures of Jellyfin's own plugins). Jellyfin shows it in the catalog straight from that URL and
+copies it into the plugin's folder when it installs or updates the plugin, so an installed plugin shows a new picture
+from its next update.
+
 ## Required checks on the release PR
 
 The release PR is opened and updated by the Release workflow with its own `GITHUB_TOKEN`. GitHub still runs `pull_request`

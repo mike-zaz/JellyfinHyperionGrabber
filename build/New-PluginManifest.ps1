@@ -55,6 +55,7 @@ if ($versions.Count -gt 0) {
             overview    = $metadata.overview
             owner       = $metadata.owner
             category    = $metadata.category
+            imageUrl    = $metadata.imageUrl
             versions    = $versions
         })
 }
