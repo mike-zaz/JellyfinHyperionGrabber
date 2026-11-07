@@ -53,8 +53,8 @@ public sealed class KodiClockTests : IAsyncDisposable
     }
 
     [Theory]
-    [InlineData(1.5)] // A tempo (Kodi 19+).
-    [InlineData(8)] // Fast forward.
+    [InlineData(2)] // Fast forward (Kodi says 1 at any tempo; the tracker measures that).
+    [InlineData(8)]
     [InlineData(-2)] // Rewind.
     public async Task ReadsTheSpeedFromKodi(double speed)
     {

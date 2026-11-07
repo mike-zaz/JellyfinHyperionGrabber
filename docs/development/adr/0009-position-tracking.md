@@ -75,20 +75,27 @@ The range used to move at 1× while playing. Jellyfin has no playback speed in `
 `PlaybackProgressInfo` (checked in 10.11.0 and 12.0.0), so at 1.5× in the web player every report contradicted the
 range and restarted decoding.
 
-**Decision.** The range moves at a rate, 1 by default:
+**Decision.** The range moves at a rate, 1 by default, measured from positions of one stretch of playing:
 
-- **Player's clock:** a reading carries the player's speed (Kodi's `speed`, also tempos such as 1.5 since Kodi 19).
-  A speed from 0.25 to 2 becomes the rate. Fast forward (above 2) and rewind (below 0) hold the estimate and ignore
-  reported positions until a reading shows normal playback, which then moves the range like a seek. Once a clock
-  reading was applied, reports no longer measure the speed.
-- **Reports only:** the tracker measures the speed between consecutive reports of one stretch of playing, at least
-  5 s apart (30 s if either is truncated to whole seconds, which can be up to a second off). A measurement near a
-  quarter step (0.75, 1.25, 1.5, ...) snaps to it. A new rate needs two measurements in a row that agree within 0.05
-  and differ from the current one by more than 0.08. A measurement outside 0.25-2.08 is a seek and resets the
-  candidate. Pause, resume and a start begin a new stretch; a start also resets the rate to 1.
+- **Measuring:** the speed between two positions at least a window apart. A new rate needs two measurements in a row
+  that agree within 0.05 and differ from the current one by more than 0.08. A measurement outside 0.25-2.08 is a seek
+  and resets the candidate. A position that no followed speed can explain even before the window is over (allowing
+  for both positions' precision) is a seek too, usually the client's report of it, and the measurement starts over
+  from there, so a seek is not measured as part of the next speed. Pause, resume and a start begin a new stretch; a
+  start also resets the rate to 1.
+- **Player's clock (Kodi):** Kodi's `speed` is a whole number (`(int)lrint(GetPlaySpeed())` in
+  `xbmc/interfaces/json-rpc/PlayerOperations.cpp`), and its tempo (0.8-1.5, `GetPlayTempo()`) cannot be read: at a
+  tempo of 1.5 it says 1. So the clock gives pause (0), 2× fast forward (2, followed) and scanning (above 2 or below 0:
+  the estimate and reported positions are held until a reading shows normal playback, which then moves the range like
+  a seek). At 1 the tempo is measured from the readings themselves (milliseconds, every 2 s): 3 s window, rounded to
+  Kodi's tenth steps when within 0.025. Once a clock reading was applied, reports no longer measure the speed.
+- **Reports only:** 5 s window, 30 s if either report is truncated to whole seconds (up to a second off); a
+  measurement near a quarter step (0.75, 1.25, 1.5, ...) snaps to it, as Jellyfin's apps offer those.
 
-**Consequences.** Kodi follows a speed change at once. Other clients catch up after two reports (about 20 s for the
-web client), and the one or two reports before that still look like seeks. Two equal skips in a row, each measured as
-one speed (for example +5 s every 10 s), would be taken for 1.5× until the next two measurements; that is unlikely
-when watching. The jitter of the web client's 0-250 ms report age is about 2.5 % over 10 s, well inside the 8 %
-threshold.
+**Consequences.** Kodi with its clock follows a tempo change after about 8-12 s (two agreeing measurements of two
+readings each), with one or two jumps on the way. Other clients catch up after two reports (about 20 s for the
+web client), and the one or two reports before that still look like seeks. Two equal skips in a row that the client
+does not report as they happen, each measured as one speed (for example +5 s every 10 s), would be taken for 1.5×
+until the next two measurements; that is unlikely when watching. The jitter of the web client's 0-250 ms report age is
+about 2.5 % over 10 s, well inside the 8 % threshold. At 1.5× or 2× the session still sends at the configured frame
+rate, so a third or half of the decoded pictures count as dropped.

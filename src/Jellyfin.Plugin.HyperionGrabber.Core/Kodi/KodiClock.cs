@@ -325,7 +325,8 @@ internal sealed partial class KodiClock : IPlaybackClock
 
         var received = _timeProvider.GetUtcNow();
 
-        // speed: 1 normal, 0 paused, 2/4/8/... fast forward, -2/... rewind; Kodi 19+ also reports tempos such as 1.5.
+        // speed: 0 paused, 1 normal, 2/4/8/... fast forward, negative rewind. Kodi rounds it to a whole number and keeps
+        // the tempo (0.8 to 1.5) apart, so at a tempo of 1.5 it says 1; the tracker measures the tempo from the readings.
         if (TryGetProperty(result, "time") is not { } time || TryGetDouble(result, "speed") is not { } speed)
         {
             return null;

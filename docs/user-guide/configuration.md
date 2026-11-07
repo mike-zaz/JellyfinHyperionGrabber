@@ -72,11 +72,15 @@ firewall, or Jellyfin seeing a proxy instead of the Kodi device), the plugin use
 The lights follow playback speeds from 0.25× to 2×, for example a talk at 1.5× in the web player. There is nothing to
 set:
 
-- **Kodi** (with [Kodi's clock](#kodis-clock)) tells the plugin its speed, so the lights change speed with it at once.
-  Fast forward and rewind hold the picture; the lights continue where normal playback resumes.
+- **Kodi** (with [Kodi's clock](#kodis-clock)): the plugin reads Kodi's position every 2 seconds and measures the tempo
+  from it, so after you change the tempo the lights catch up within about 10 seconds. Fast forward and rewind hold the
+  picture; the lights continue where normal playback resumes.
 - **Other apps** do not tell Jellyfin their speed. The plugin measures it from their position reports: after you
   change the speed, the lights catch up within about 20 seconds (two reports), with one or two short jumps on the
   way. A seek is never taken for a speed change.
+
+The plugin still sends pictures at the frame rate you set, so at 1.5× a third of the decoded pictures (at 2× half)
+show up as dropped in the [status](#status); that is expected.
 
 ### HDR and Dolby Vision
 

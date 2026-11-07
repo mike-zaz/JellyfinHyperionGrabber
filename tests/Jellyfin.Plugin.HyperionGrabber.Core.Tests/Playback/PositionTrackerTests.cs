@@ -226,14 +226,49 @@ public class PositionTrackerTests
     }
 
     [Fact]
-    public void ClockReading_AtATempo_MovesTheEstimateAtThatSpeed()
+    public void ClockReading_AtTwiceTheSpeed_MovesTheEstimateAtIt()
     {
+        // Kodi's 2x fast forward still plays every second of the video, twice as fast.
         var tracker = new PositionTracker(Start(0, at: 0));
 
-        tracker.Apply(Clock(10, at: 10, speed: 1.5));
+        tracker.Apply(Clock(10, at: 10, speed: 2));
+
+        Assert.Equal(2, tracker.Rate);
+        AssertNear(30, tracker.Estimate(At(20)));
+    }
+
+    [Theory]
+    [InlineData(1.5)]
+    [InlineData(1.2)] // Kodi's tempos are tenth steps: not rounded to 1.25.
+    [InlineData(0.8)]
+    public void ClockReadings_AtAKodiTempo_MeasureIt(double tempo)
+    {
+        // Kodi reports speed 1 at any tempo; its clock is read every 2 s.
+        var tracker = new PositionTracker(Start(0, at: 0));
+
+        for (var at = 2; at <= 10; at += 2)
+        {
+            tracker.Apply(Clock(tempo * at, at));
+        }
+
+        Assert.Equal(tempo, tracker.Rate);
+        AssertNear(tempo * 12, tracker.Estimate(At(12)), toleranceMs: 30);
+    }
+
+    [Fact]
+    public void ClockReadings_AfterFastForward_ReturnToTheMeasuredTempo()
+    {
+        var tracker = new PositionTracker(Start(0, at: 0));
+        for (var at = 2; at <= 10; at += 2)
+        {
+            tracker.Apply(Clock(1.5 * at, at));
+        }
+
+        tracker.Apply(Clock(16, at: 11, speed: 2));
+        tracker.Apply(Clock(30, at: 18));
 
         Assert.Equal(1.5, tracker.Rate);
-        AssertNear(25, tracker.Estimate(At(20)));
+        AssertNear(33, tracker.Estimate(At(20)), toleranceMs: 30);
     }
 
     [Theory]
@@ -297,6 +332,23 @@ public class PositionTrackerTests
     }
 
     [Fact]
+    public void Seeks_ReportedAsTheyHappen_AreNotTakenForASpeed()
+    {
+        // Two +10 s skips, each reported at once, then the regular reports every 10 s. Measured across a skip, 10 s of
+        // playing would look like 2x.
+        var tracker = new PositionTracker(Start(0, at: 0));
+        tracker.Apply(Report(10.1, at: 10));
+
+        tracker.Apply(Report(23.0, at: 13)); // Skipped from 13 to 23.
+        tracker.Apply(Report(30.1, at: 20));
+        tracker.Apply(Report(43.0, at: 23)); // Skipped from 33 to 43.
+        tracker.Apply(Report(50.1, at: 30));
+
+        Assert.Equal(1, tracker.Rate);
+        AssertNear(60.1, tracker.Estimate(At(40)), toleranceMs: 300);
+    }
+
+    [Fact]
     public void Seek_DoesNotChangeTheSpeed()
     {
         var tracker = new PositionTracker(Start(0, at: 0));
@@ -350,7 +402,7 @@ public class PositionTrackerTests
     public void NewStart_IsAtNormalSpeed()
     {
         var tracker = new PositionTracker(Start(0, at: 0));
-        tracker.Apply(Clock(10, at: 10, speed: 1.5));
+        tracker.Apply(Clock(10, at: 10, speed: 2));
 
         tracker.Apply(Start(0, at: 30));
 

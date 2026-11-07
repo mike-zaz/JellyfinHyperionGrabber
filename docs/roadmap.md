@@ -34,7 +34,7 @@ Milestones are deliberately small so each one ships something usable. Items beco
 - [x] Light timing offset (ms), one value for all devices *(shipped in 0.3)*
 - [ ] Per-device timing offset, with a calibration video and guide
 - [x] Precise clock for Kodi clients via Kodi's JSON-RPC (position and events in real time) *(shipped in 0.7)*
-- [x] Playback speed changes, 0.25× to 2×: Kodi's speed from its clock, other clients measured from their reports
+- [x] Playback speed changes, 0.25× to 2×, measured from Kodi's clock or from other clients' reports
       ([Playback speed](user-guide/configuration.md#playback-speed))
 
 ## M3: Picture quality
