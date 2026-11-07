@@ -68,3 +68,27 @@ Each report is logged at Debug with how far it moved the estimate and the remain
   their own precision rule.
 - The rules use only the reports' values and arrival times, so they work for any client, including ones not checked
   yet; clients that report more often converge faster.
+
+## Amendment: playback speed (2026-11-07)
+
+The range used to move at 1× while playing. Jellyfin has no playback speed in `PlayerStateInfo` or
+`PlaybackProgressInfo` (checked in 10.11.0 and 12.0.0), so at 1.5× in the web player every report contradicted the
+range and restarted decoding.
+
+**Decision.** The range moves at a rate, 1 by default:
+
+- **Player's clock:** a reading carries the player's speed (Kodi's `speed`, also tempos such as 1.5 since Kodi 19).
+  A speed from 0.25 to 2 becomes the rate. Fast forward (above 2) and rewind (below 0) hold the estimate and ignore
+  reported positions until a reading shows normal playback, which then moves the range like a seek. Once a clock
+  reading was applied, reports no longer measure the speed.
+- **Reports only:** the tracker measures the speed between consecutive reports of one stretch of playing, at least
+  5 s apart (30 s if either is truncated to whole seconds, which can be up to a second off). A measurement near a
+  quarter step (0.75, 1.25, 1.5, ...) snaps to it. A new rate needs two measurements in a row that agree within 0.05
+  and differ from the current one by more than 0.08. A measurement outside 0.25-2.08 is a seek and resets the
+  candidate. Pause, resume and a start begin a new stretch; a start also resets the rate to 1.
+
+**Consequences.** Kodi follows a speed change at once. Other clients catch up after two reports (about 20 s for the
+web client), and the one or two reports before that still look like seeks. Two equal skips in a row, each measured as
+one speed (for example +5 s every 10 s), would be taken for 1.5× until the next two measurements; that is unlikely
+when watching. The jitter of the web client's 0-250 ms report age is about 2.5 % over 10 s, well inside the 8 %
+threshold.

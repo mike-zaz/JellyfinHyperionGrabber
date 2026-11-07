@@ -45,6 +45,9 @@ public sealed record TargetStatusResponse
     /// <summary>Gets how far the position may be off, in seconds.</summary>
     public double? PositionUncertaintySeconds { get; init; }
 
+    /// <summary>Gets the playback speed when it is not normal (for example 1.5); <see langword="null"/> at 1×.</summary>
+    public double? PlaybackSpeed { get; init; }
+
     /// <summary>Gets the pictures sent to Hyperion per second, over the last second.</summary>
     public double? FramesPerSecond { get; init; }
 
@@ -117,6 +120,7 @@ public sealed record TargetStatusResponse
             Since = playback.Since,
             PositionSeconds = Math.Round(session.Position.TotalSeconds, 1),
             PositionUncertaintySeconds = Math.Round(session.PositionUncertainty.TotalSeconds, 2),
+            PlaybackSpeed = Math.Abs(session.PlaybackRate - 1) < 0.005 ? null : Math.Round(session.PlaybackRate, 2),
             FramesPerSecond = Math.Round(session.FramesPerSecond, 1),
             TargetFramesPerSecond = session.TargetFramesPerSecond,
             FramesSent = session.FramesSent,

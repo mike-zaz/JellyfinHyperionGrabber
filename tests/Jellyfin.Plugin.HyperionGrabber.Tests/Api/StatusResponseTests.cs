@@ -124,6 +124,15 @@ public class StatusResponseTests
         Assert.Null(Describe(new GrabSessionStatus { Phase = GrabSessionPhase.Starting }, "x").Picture);
     }
 
+    [Theory]
+    [InlineData(1.0, null)]
+    [InlineData(1.5, 1.5)]
+    [InlineData(0.75, 0.75)]
+    public void Target_WhilePlaying_GivesTheSpeedOnlyWhenItIsNotNormal(double rate, double? speed)
+    {
+        Assert.Equal(speed, Describe(new GrabSessionStatus { Phase = GrabSessionPhase.Streaming, PlaybackRate = rate }, "x").PlaybackSpeed);
+    }
+
     [Fact]
     public void Target_WithAPlayerClock_NamesIt()
     {

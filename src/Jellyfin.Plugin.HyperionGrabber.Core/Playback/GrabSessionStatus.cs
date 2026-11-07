@@ -23,6 +23,10 @@ public sealed record GrabSessionStatus
     /// <summary>Gets how far <see cref="Position"/> may be off, from the precision of the client's reports.</summary>
     public TimeSpan PositionUncertainty { get; init; }
 
+    /// <summary>Gets the playback speed the position moves at (1 = normal), from the player's clock or measured from
+    /// the client's reports.</summary>
+    public double PlaybackRate { get; init; } = 1;
+
     /// <summary>Gets the pictures sent to Hyperion per second, over the last second.</summary>
     public double FramesPerSecond { get; init; }
 

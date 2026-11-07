@@ -136,6 +136,9 @@ internal sealed partial class KodiClock : IPlaybackClock
     private static int? TryGetInt32(JsonElement element, string name)
         => TryGetProperty(element, name) is { ValueKind: JsonValueKind.Number } value && value.TryGetInt32(out var number) ? number : null;
 
+    private static double? TryGetDouble(JsonElement element, string name)
+        => TryGetProperty(element, name) is { ValueKind: JsonValueKind.Number } value && value.TryGetDouble(out var number) ? number : null;
+
     [SuppressMessage(
         "Design",
         "CA1031:Do not catch general exception types",
@@ -321,7 +324,9 @@ internal sealed partial class KodiClock : IPlaybackClock
         }
 
         var received = _timeProvider.GetUtcNow();
-        if (TryGetProperty(result, "time") is not { } time || TryGetInt32(result, "speed") is not { } speed)
+
+        // speed: 1 normal, 0 paused, 2/4/8/... fast forward, -2/... rewind; Kodi 19+ also reports tempos such as 1.5.
+        if (TryGetProperty(result, "time") is not { } time || TryGetDouble(result, "speed") is not { } speed)
         {
             return null;
         }
@@ -333,7 +338,7 @@ internal sealed partial class KodiClock : IPlaybackClock
             TryGetInt32(time, "seconds") ?? 0,
             TryGetInt32(time, "milliseconds") ?? 0);
         var halfRoundTrip = (received - sent) / 2;
-        return new ClockReading(position, speed == 0, sent + halfRoundTrip, halfRoundTrip + ReadingTolerance);
+        return new ClockReading(position, speed == 0, sent + halfRoundTrip, halfRoundTrip + ReadingTolerance, speed);
     }
 
     private async Task WaitForNextReadingAsync(CancellationToken token)

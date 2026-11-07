@@ -20,6 +20,10 @@ namespace Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 /// drifted apart) replaces it.</description></item>
 /// <item><description>While playing, the range moves with time and widens by <see cref="DriftRate"/> of the elapsed
 /// time on each side, because the client's and the server's clocks do not run at exactly the same speed.</description></item>
+/// <item><description>It moves at the playback speed (<see cref="Rate"/>). Jellyfin does not report a speed: a player's
+/// clock does (Kodi), otherwise the tracker measures it between reports of one stretch of playing and takes a new speed
+/// once two measurements in a row agree, so a seek never changes it. Fast forward and rewind on the player's clock hold
+/// the estimate; normal playback resumes as a seek.</description></item>
 /// </list>
 /// <para>The estimate is the middle of the range, so every report that agrees makes it more precise instead of
 /// resetting it. Not thread-safe: a tracker belongs to one session's task.</para>
@@ -28,6 +32,19 @@ internal sealed class PositionTracker
 {
     /// <summary>How much faster or slower than the server's clock a client may play (0.1 %).</summary>
     internal const double DriftRate = 0.001;
+
+    /// <summary>The slowest playback speed the lights follow.</summary>
+    internal const double MinFollowedRate = 0.25;
+
+    /// <summary>The fastest playback speed the lights follow; faster (fast forward) or backwards (rewind) holds the
+    /// picture until normal playback resumes.</summary>
+    internal const double MaxFollowedRate = 2;
+
+    /// <summary>How far a measured speed must be from the current one to count as a change.</summary>
+    internal const double RateChangeThreshold = 0.08;
+
+    /// <summary>How close two measured speeds must be to confirm each other.</summary>
+    internal const double RateAgreement = 0.05;
 
     /// <summary>How far the real position may be from a start report.</summary>
     internal static readonly TimeSpan StartUncertainty = TimeSpan.FromSeconds(1);
@@ -41,11 +58,24 @@ internal sealed class PositionTracker
     /// <summary>How old a millisecond position reported while playing may be (the web client's update interval).</summary>
     internal static readonly TimeSpan MaxReportAge = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>How far apart two millisecond reports must be to measure the speed from them.</summary>
+    internal static readonly TimeSpan RateWindow = TimeSpan.FromSeconds(5);
+
+    /// <summary>How far apart reports must be when one is truncated to whole seconds (up to a second off).</summary>
+    internal static readonly TimeSpan TruncatedRateWindow = TimeSpan.FromSeconds(30);
+
     // The real position at _at lies between _earliest and _latest.
     private TimeSpan _earliest;
     private TimeSpan _latest;
     private DateTimeOffset _at;
     private bool _paused;
+
+    // Playback speed: 1 unless a player's clock tells otherwise, or two reports in a row measure another one.
+    private double _rate = 1;
+    private bool _scanning; // The player's clock shows fast forward or rewind: hold the position.
+    private bool _rateFromClock;
+    private PlaybackState? _rateAnchor;
+    private double? _rateCandidate;
 
     /// <summary>Initializes a new instance of the <see cref="PositionTracker"/> class.</summary>
     /// <param name="first">The first known state of the playback: usually the start report, but a session can also
@@ -58,18 +88,23 @@ internal sealed class PositionTracker
         (_earliest, _latest) = first.IsStart || !first.IsPositionReported
             ? StartRange(first.Position)
             : ReportRange(first.Position, first.IsPaused);
+        _rateAnchor = first.IsPaused || !first.IsPositionReported ? null : first;
     }
 
     /// <summary>Gets half the width of the range: how far the estimate may be off at most.</summary>
     public TimeSpan Uncertainty => TimeSpan.FromTicks((_latest.Ticks - _earliest.Ticks) / 2);
 
-    /// <summary>Estimates the position at a time: the middle of the range, moved on by the time since while playing.</summary>
+    /// <summary>Gets the playback speed the estimate moves at while playing (1 = normal).</summary>
+    public double Rate => _rate;
+
+    /// <summary>Estimates the position at a time: the middle of the range, moved on by the time since (at
+    /// <see cref="Rate"/>) while playing.</summary>
     /// <param name="now">The time to estimate for.</param>
     /// <returns>The position; may be negative just before the start.</returns>
     public TimeSpan Estimate(DateTimeOffset now)
     {
         var middle = TimeSpan.FromTicks(_earliest.Ticks + ((_latest.Ticks - _earliest.Ticks) / 2));
-        return _paused || now <= _at ? middle : middle + (now - _at);
+        return _paused || now <= _at ? middle : middle + ((now - _at) * _rate);
     }
 
     /// <summary>Takes a new report into account.</summary>
@@ -81,13 +116,19 @@ internal sealed class PositionTracker
         var at = report.ReportedAt > _at ? report.ReportedAt : _at;
         var before = Estimate(at);
         MoveTo(at);
-        if (report.IsPositionReported)
+        if (report.IsStart)
+        {
+            (_rate, _scanning, _rateFromClock) = (1, false, false);
+        }
+
+        // While the player's clock shows a scan, reported positions jump; the clock ends the scan.
+        if (report.IsPositionReported && !_scanning)
         {
             // Reports arrive in order; one that is older than the range still describes a playing position later on.
             var position = report.Position;
             if (!report.IsPaused && at > report.ReportedAt)
             {
-                position += at - report.ReportedAt;
+                position += (at - report.ReportedAt) * _rate;
             }
 
             if (report.IsStart)
@@ -99,9 +140,11 @@ internal sealed class PositionTracker
             {
                 Narrow(ReportRange(position, report.IsPaused));
             }
+
+            MeasureRate(report);
         }
 
-        _paused = report.IsPaused;
+        _paused = report.IsPaused || _scanning;
         return Estimate(at) - before;
     }
 
@@ -114,11 +157,35 @@ internal sealed class PositionTracker
         var at = reading.At > _at ? reading.At : _at;
         var before = Estimate(at);
         MoveTo(at);
-        var position = reading.IsPaused || at <= reading.At ? reading.Position : reading.Position + (at - reading.At);
-        Narrow((position - reading.Uncertainty, position + reading.Uncertainty));
-        _paused = reading.IsPaused;
+
+        // The clock knows the speed: reports no longer need to measure it.
+        (_rateFromClock, _rateAnchor, _rateCandidate) = (true, null, null);
+        _scanning = !reading.IsPaused && reading.Speed is < MinFollowedRate or > MaxFollowedRate;
+        if (!_scanning)
+        {
+            // While scanning, positions jump: the estimate holds until normal playback resumes there (a seek).
+            if (!reading.IsPaused)
+            {
+                _rate = reading.Speed;
+            }
+
+            var position = reading.IsPaused || at <= reading.At ? reading.Position : reading.Position + ((at - reading.At) * _rate);
+            Narrow((position - reading.Uncertainty, position + reading.Uncertainty));
+        }
+
+        _paused = reading.IsPaused || _scanning;
         return Estimate(at) - before;
     }
+
+    /// <summary>Rounds a measured speed to the common steps (0.25, 0.5, 0.75, 1, 1.25, ...) when it is close to one.</summary>
+    private static double Snap(double rate)
+    {
+        var step = Math.Round(rate * 4) / 4;
+        return Math.Abs(rate - step) <= RateAgreement ? step : Math.Round(rate, 2);
+    }
+
+    private static bool IsTruncated(PlaybackState report)
+        => report.Position > TimeSpan.Zero && report.Position.Ticks % TimeSpan.TicksPerSecond == 0;
 
     private static (TimeSpan Earliest, TimeSpan Latest) StartRange(TimeSpan position)
         => (position - StartUncertainty, position + StartUncertainty);
@@ -137,12 +204,62 @@ internal sealed class PositionTracker
         if (!_paused && at > _at)
         {
             var elapsed = at - _at;
+            var moved = elapsed * _rate;
             var drift = elapsed * DriftRate;
-            _earliest += elapsed - drift;
-            _latest += elapsed + drift;
+            _earliest += moved - drift;
+            _latest += moved + drift;
         }
 
         _at = at;
+    }
+
+    /// <summary>
+    /// Measures the speed between this report and the previous one while playing. Clients do not report their speed, so
+    /// a new one is taken only when two measurements in a row agree on it; a seek measures an impossible speed and is
+    /// ignored.
+    /// </summary>
+    private void MeasureRate(PlaybackState report)
+    {
+        if (_rateFromClock)
+        {
+            return;
+        }
+
+        var anchor = _rateAnchor;
+        if (report.IsStart || report.IsPaused || _paused || anchor is null)
+        {
+            // Only reports of one stretch of playing measure the speed.
+            (_rateAnchor, _rateCandidate) = (report.IsPaused ? null : report, null);
+            return;
+        }
+
+        var elapsed = report.ReportedAt - anchor.ReportedAt;
+        if (elapsed < (IsTruncated(report) || IsTruncated(anchor) ? TruncatedRateWindow : RateWindow))
+        {
+            return; // Too close to measure; the next report measures from the same anchor.
+        }
+
+        _rateAnchor = report;
+        var measured = (report.Position - anchor.Position) / elapsed;
+        if (measured is < MinFollowedRate or > MaxFollowedRate + RateChangeThreshold)
+        {
+            _rateCandidate = null; // A seek.
+            return;
+        }
+
+        var rate = Snap(measured);
+        if (Math.Abs(rate - _rate) <= RateChangeThreshold)
+        {
+            _rateCandidate = null;
+        }
+        else if (_rateCandidate is { } candidate && Math.Abs(candidate - rate) <= RateAgreement)
+        {
+            (_rate, _rateCandidate) = (rate, null);
+        }
+        else
+        {
+            _rateCandidate = rate;
+        }
     }
 
     private void Narrow((TimeSpan Earliest, TimeSpan Latest) report)

@@ -23,7 +23,7 @@ internal sealed class FakeKodiServer : IAsyncDisposable
     private readonly ConcurrentDictionary<int, TcpClient> _clients = new();
     private readonly Task _accepting;
     private long _timeTicks;
-    private volatile int _speed = 1;
+    private double _speed = 1;
     private volatile bool _hasVideoPlayer = true;
     private volatile string? _file;
     private int _connections;
@@ -48,11 +48,11 @@ internal sealed class FakeKodiServer : IAsyncDisposable
         set => Interlocked.Exchange(ref _timeTicks, value.Ticks);
     }
 
-    /// <summary>Gets or sets the playback speed (0 = paused).</summary>
-    public int Speed
+    /// <summary>Gets or sets the playback speed (0 = paused; whole numbers are written without a fraction, like Kodi).</summary>
+    public double Speed
     {
-        get => _speed;
-        set => _speed = value;
+        get => Volatile.Read(ref _speed);
+        set => Volatile.Write(ref _speed, value);
     }
 
     /// <summary>Gets or sets a value indicating whether a video player is active.</summary>
