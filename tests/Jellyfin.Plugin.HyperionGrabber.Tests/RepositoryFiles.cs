@@ -12,6 +12,8 @@ internal static class RepositoryFiles
 
     public static string ReadAllText(string relativePath) => File.ReadAllText(Path.Combine(Root.Value, relativePath));
 
+    public static bool Exists(string relativePath) => File.Exists(Path.Combine(Root.Value, relativePath));
+
     public static string ReadEmbeddedResource(string fileName)
     {
         var assembly = typeof(Plugin).Assembly;
