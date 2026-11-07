@@ -51,7 +51,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public override Guid Id => Guid.Parse(PluginIdString);
 
     /// <inheritdoc />
-    public override string Description => "Ambient lighting for Jellyfin: streams the video you are watching to Hyperion.ng or HyperHDR.";
+    public override string Description => "Ambilight for Jellyfin: streams the video you are watching to Hyperion.ng or HyperHDR, so your LEDs follow the picture.";
 
     /// <inheritdoc />
     public IEnumerable<PluginPageInfo> GetPages()
