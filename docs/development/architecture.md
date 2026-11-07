@@ -160,6 +160,12 @@ Design rules for the pipeline:
 - **Process hygiene.** FFmpeg processes are always killed and awaited when a session ends, including on errors and
   server shutdown.
 
+**Live preview.** `GET HyperionGrabber/Preview?target=n` returns the picture last sent to that Hyperion server as
+base64 RGB24 (about 58 KB of JSON at 160×90). The session copies each sent frame into its keep-alive buffer under a
+lock that only the preview also takes, so per frame it is an uncontended lock and no allocation; the copy for the
+preview is made only when the page asks. The page polls it every 250 ms while **Show live preview** is on, the page is
+shown and the browser tab is visible, one request at a time, and draws it on a canvas.
+
 **Status.** The session publishes its phase on every tick (one integer write) and the frame rate, position and
 decoder once a second; problems are published when they happen. `GetStatus()` only reads these fields, so the status
 endpoint never waits for the session or the monitor's queue and costs nothing per frame. The monitor publishes the

@@ -74,11 +74,17 @@ public sealed class RecordingGrabSession : IGrabSession
     /// <summary>Gets or sets what <see cref="GetStatus"/> returns.</summary>
     public GrabSessionStatus Status { get; set; } = new() { Phase = GrabSessionPhase.Streaming };
 
+    /// <summary>Gets or sets what <see cref="GetPreview"/> returns.</summary>
+    public PreviewPicture? Preview { get; set; }
+
     /// <inheritdoc />
     public void Update(PlaybackState state) => _updates.Enqueue(state);
 
     /// <inheritdoc />
     public GrabSessionStatus GetStatus() => Status;
+
+    /// <inheritdoc />
+    public PreviewPicture? GetPreview() => Preview;
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

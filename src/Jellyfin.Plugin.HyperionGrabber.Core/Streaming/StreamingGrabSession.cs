@@ -89,6 +89,7 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private readonly TaskCompletionSource _hyperionReleased = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Task _previousHyperionReleased;
     private readonly PositionTracker _tracker; // Owned by the run task.
+    private readonly Lock _previewLock = new(); // Guards _lastFrame's contents and size for GetPreview.
     private PlaybackState _state;
     private Task _run = Task.CompletedTask;
     private long _framesSent;
@@ -130,6 +131,8 @@ internal sealed partial class StreamingGrabSession : IGrabSession
     private TimeSpan _latencyOffset;
     private byte[] _lastFrame = [];
     private bool _hasLastFrame;
+    private int _previewWidth;
+    private int _previewHeight;
     private DateTimeOffset _lastSentAt;
     private DateTimeOffset? _pausedSince;
     private bool _releasedForPause;
@@ -189,6 +192,15 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         if (previous.IsPaused != state.IsPaused)
         {
             Log.PauseChanged(_logger, state.IsPaused, state.Position);
+        }
+    }
+
+    /// <inheritdoc />
+    public PreviewPicture? GetPreview()
+    {
+        lock (_previewLock)
+        {
+            return _hasLastFrame ? new PreviewPicture(_previewWidth, _previewHeight, _lastFrame.AsSpan().ToArray()) : null;
         }
     }
 
@@ -401,8 +413,13 @@ internal sealed partial class StreamingGrabSession : IGrabSession
         var options = plan.Frames;
         var interval = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / options.FramesPerSecond);
         _latencyOffset = plan.LatencyOffset;
-        _lastFrame = new byte[options.FrameLength];
-        _hasLastFrame = false;
+        lock (_previewLock)
+        {
+            _lastFrame = new byte[options.FrameLength];
+            _hasLastFrame = false;
+            (_previewWidth, _previewHeight) = (options.OutputWidth, options.OutputHeight);
+        }
+
         _lastSentAt = DateTimeOffset.MinValue;
         Volatile.Write(ref _targetFramesPerSecond, options.FramesPerSecond);
         Volatile.Write(ref _requestedDecoder, (int)options.HardwareAcceleration + 1);
@@ -482,8 +499,12 @@ internal sealed partial class StreamingGrabSession : IGrabSession
                     isNewFrame = due is not null;
                     if (due is not null)
                     {
-                        due.Rgb24.Span.CopyTo(_lastFrame);
-                        _hasLastFrame = true;
+                        // Uncontended unless the live preview copies the frame at this moment.
+                        lock (_previewLock)
+                        {
+                            due.Rgb24.Span.CopyTo(_lastFrame);
+                            _hasLastFrame = true;
+                        }
                     }
                     else if (!_hasLastFrame || now - _lastSentAt < KeepAliveInterval)
                     {

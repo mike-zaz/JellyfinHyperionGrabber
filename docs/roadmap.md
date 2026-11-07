@@ -50,7 +50,8 @@ Milestones are deliberately small so each one ships something usable. Items beco
 ## M4: Polish
 
 - [ ] Auto-discovery of Hyperion.ng / HyperHDR on the network (mDNS/SSDP)
-- [ ] Live LED preview on the config page
+- [x] Live preview of the picture sent to Hyperion on the config page
+      ([Status](user-guide/configuration.md#status))
 - [ ] Per-library / per-item opt-out, intros and trailers handling
 - [ ] Localization of the config page
 
