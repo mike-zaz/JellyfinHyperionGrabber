@@ -110,9 +110,9 @@ the lights; when it stops, the other one takes over. Devices of [other Hyperion 
 Some videos are better without ambient light, such as a children's library, music videos or trailers. Under
 **Skip videos**:
 
-- **Follow trailers and extras**: untick it to skip trailers (including the ones cinema mode plays before a film) and
-  other extras such as behind-the-scenes clips. Intro videos added by other plugins may not count as extras; give them
-  the tag below instead.
+- **Follow trailers and extras**: untick it to skip trailers (also before a film in cinema mode, when they are trailers
+  from your library) and other extras such as behind-the-scenes clips. Intro videos added by other plugins may not
+  count as extras; if one still drives the lights, give it the tag below.
 - **Tag that turns the lights off** (default `nolights`): add the tag to a video in Jellyfin's metadata editor
   (**⋮ → Edit metadata → Tags**). Case does not matter. A tag on a series or a season covers all its episodes. Leave
   the field empty to ignore tags.

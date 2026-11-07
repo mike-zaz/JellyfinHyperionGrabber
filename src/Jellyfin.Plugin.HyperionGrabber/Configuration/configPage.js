@@ -496,10 +496,9 @@ export default function (view) {
             }
 
             updateTargetCards(view);
-            return Promise.all([
-                loadClients(view, config.PlaybackDevices || [], config.PlaybackUsers || []),
-                loadLibraries(view, config.ExcludedLibraries || [])
-            ]);
+            // One after the other: both report problems in #PlaybackResult, and loadClients clears it when it works.
+            return loadClients(view, config.PlaybackDevices || [], config.PlaybackUsers || [])
+                .then(() => loadLibraries(view, config.ExcludedLibraries || []));
         }).then(function () {
             Dashboard.hideLoadingMsg();
         }).catch(function () {
