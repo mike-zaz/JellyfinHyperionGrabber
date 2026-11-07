@@ -5,6 +5,7 @@ using System.Linq;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -16,14 +17,16 @@ namespace Jellyfin.Plugin.HyperionGrabber.Frames;
 /// Resolves the playing media source of a library video to its file, the way Jellyfin's transcoder opens it.
 /// </summary>
 /// <remarks>
-/// Only local video files are decoded. Live TV, remote and <c>.strm</c> sources, DVD/Blu-ray folders and disc images
-/// are not: decoding them a second time would open a second tuner or network stream, or needs Jellyfin's special input
-/// handling.
+/// <para>Only local video files are decoded. Live TV, remote and <c>.strm</c> sources, DVD/Blu-ray folders and disc
+/// images are not: decoding them a second time would open a second tuner or network stream, or needs Jellyfin's special
+/// input handling.</para>
+/// <para>Videos the user chose to skip (<see cref="PlaybackExclusions"/>) are excluded before their media is looked at.</para>
 /// </remarks>
 public class JellyfinVideoInputResolver : IVideoInputResolver
 {
     private readonly ILibraryManager _libraryManager;
     private readonly IMediaSourceManager _mediaSourceManager;
+    private readonly Func<PlaybackExclusions> _exclusions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JellyfinVideoInputResolver"/> class.
@@ -31,9 +34,19 @@ public class JellyfinVideoInputResolver : IVideoInputResolver
     /// <param name="libraryManager">Finds the playing item.</param>
     /// <param name="mediaSourceManager">Lists the item's media sources (versions) with their streams.</param>
     public JellyfinVideoInputResolver(ILibraryManager libraryManager, IMediaSourceManager mediaSourceManager)
+        : this(libraryManager, mediaSourceManager, static () => Plugin.Instance?.Configuration?.ToExclusions() ?? PlaybackExclusions.None)
+    {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="JellyfinVideoInputResolver"/> class.</summary>
+    /// <param name="libraryManager">Finds the playing item.</param>
+    /// <param name="mediaSourceManager">Lists the item's media sources (versions) with their streams.</param>
+    /// <param name="exclusions">Reads the current exclusions; called for every playback.</param>
+    internal JellyfinVideoInputResolver(ILibraryManager libraryManager, IMediaSourceManager mediaSourceManager, Func<PlaybackExclusions> exclusions)
     {
         _libraryManager = libraryManager;
         _mediaSourceManager = mediaSourceManager;
+        _exclusions = exclusions;
     }
 
     /// <inheritdoc />
@@ -48,6 +61,11 @@ public class JellyfinVideoInputResolver : IVideoInputResolver
         if (item is not Video)
         {
             return VideoInputResult.Unsupported("it is not a video from the library (Live TV channels and music are not supported).");
+        }
+
+        if (GetExclusion(item, _exclusions()) is { } reason)
+        {
+            return VideoInputResult.Excluded(reason);
         }
 
         var sources = _mediaSourceManager.GetStaticMediaSources(item, false);
@@ -184,4 +202,47 @@ public class JellyfinVideoInputResolver : IVideoInputResolver
         => !string.IsNullOrEmpty(reportedId)
             && (string.Equals(sourceId, reportedId, StringComparison.OrdinalIgnoreCase)
                 || (Guid.TryParse(sourceId, out var source) && Guid.TryParse(reportedId, out var reported) && source == reported));
+
+    /// <summary>Tells why the user chose to skip a video: an extra, a tag on it (or its season or series), or its
+    /// library.</summary>
+    /// <returns>The reason, completing "The lights skip this video: ..."; <see langword="null"/> to follow it.</returns>
+    private string? GetExclusion(BaseItem item, PlaybackExclusions exclusions)
+    {
+        if (!exclusions.FollowExtras && (item is Trailer || item.ExtraType is not null))
+        {
+            return "it is a trailer or another extra, and Follow trailers and extras is off.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(exclusions.Tag) && FindTagged(item, exclusions.Tag.Trim()) is { } tagged)
+        {
+            return ReferenceEquals(tagged, item)
+                ? $"it has the tag {exclusions.Tag.Trim()}."
+                : $"{tagged.Name} has the tag {exclusions.Tag.Trim()}.";
+        }
+
+        if (exclusions.LibraryIds.Count > 0)
+        {
+            foreach (var library in _libraryManager.GetCollectionFolders(item) ?? [])
+            {
+                if (exclusions.LibraryIds.Contains(library.Id))
+                {
+                    return $"its library {library.Name} is excluded.";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Finds the item, or the season or series of an episode, that carries a tag (ignoring case).</summary>
+    private BaseItem? FindTagged(BaseItem item, string tag)
+    {
+        IEnumerable<BaseItem?> candidates = item is Episode episode
+            ? [item, Owner(episode.SeasonId), Owner(episode.SeriesId)]
+            : [item];
+        return candidates.FirstOrDefault(candidate => candidate?.Tags is { } tags
+            && tags.Any(t => string.Equals(t?.Trim(), tag, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private BaseItem? Owner(Guid id) => id == Guid.Empty ? null : _libraryManager.GetItemById(id);
 }

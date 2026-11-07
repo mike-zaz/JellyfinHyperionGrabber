@@ -78,6 +78,14 @@ public class HyperionGrabberController : ControllerBase
     public ActionResult<PlaybackClientsResponse> GetClients() => Ok(PlaybackClientsResponse.From(_sessionManager.Sessions));
 
     /// <summary>
+    /// Lists the server's libraries, to choose which ones never drive the lights.
+    /// </summary>
+    /// <returns>The libraries, by name.</returns>
+    [HttpGet("Libraries")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<LibrariesResponse> GetLibraries() => Ok(LibrariesResponse.From(_libraryManager.GetVirtualFolders()));
+
+    /// <summary>
     /// Connects to Hyperion, registers the priority and disconnects.
     /// </summary>
     /// <param name="request">Server to test.</param>

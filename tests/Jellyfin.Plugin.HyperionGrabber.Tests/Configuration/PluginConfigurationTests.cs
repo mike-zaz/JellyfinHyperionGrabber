@@ -98,6 +98,49 @@ public class PluginConfigurationTests
         Assert.Empty(configuration.PlaybackDevices);
         Assert.Empty(configuration.PlaybackUsers);
         Assert.Empty(configuration.AdditionalTargets); // Saved before 0.8: one Hyperion server.
+        Assert.Equal((true, "nolights"), (configuration.FollowExtras, configuration.ExcludedTag)); // Saved before 0.9.
+        Assert.Empty(configuration.ExcludedLibraries);
+    }
+
+    [Fact]
+    public void Exclusions_RoundTripThroughXmlSerializer()
+    {
+        var serializer = new XmlSerializer(typeof(PluginConfiguration));
+        var original = new PluginConfiguration
+        {
+            FollowExtras = false,
+            ExcludedTag = "no-hyperion",
+            ExcludedLibraries = [new PlaybackLibrarySelection { Id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Name = "Kids" }],
+        };
+        using var stream = new MemoryStream();
+
+        serializer.Serialize(stream, original);
+        stream.Position = 0;
+        using var reader = XmlReader.Create(stream, SafeSettings);
+        var copy = Assert.IsType<PluginConfiguration>(serializer.Deserialize(reader));
+
+        Assert.Equal((false, "no-hyperion"), (copy.FollowExtras, copy.ExcludedTag));
+        Assert.Equal(("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "Kids"), (Assert.Single(copy.ExcludedLibraries).Id, copy.ExcludedLibraries[0].Name));
+    }
+
+    [Fact]
+    public void ToExclusions_ReadsTheLibraryIds_AndTrimsTheTag()
+    {
+        var configuration = new PluginConfiguration
+        {
+            ExcludedTag = "  nolights ",
+            ExcludedLibraries =
+            [
+                new PlaybackLibrarySelection { Id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+                new PlaybackLibrarySelection { Id = "not a guid" },
+                null!,
+            ],
+        };
+
+        var exclusions = configuration.ToExclusions();
+
+        Assert.Equal([Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")], exclusions.LibraryIds);
+        Assert.Equal(("nolights", true), (exclusions.Tag, exclusions.FollowExtras));
     }
 
     [Fact]

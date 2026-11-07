@@ -52,7 +52,8 @@ Milestones are deliberately small so each one ships something usable. Items beco
 - [ ] Auto-discovery of Hyperion.ng / HyperHDR on the network (mDNS/SSDP)
 - [x] Live preview of the picture sent to Hyperion on the config page
       ([Status](user-guide/configuration.md#status))
-- [ ] Per-library / per-item opt-out, intros and trailers handling
+- [x] Per-library / per-item opt-out (tag), trailers and extras
+      ([Skip videos](user-guide/configuration.md#skip-videos))
 - [ ] Localization of the config page
 
 ## Not planned (for now)

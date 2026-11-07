@@ -114,6 +114,9 @@ If Hyperion restarts or the network drops during playback, the plugin reconnects
 | **Release the lights after pausing for (seconds)** | `15` | While paused the lights hold the picture; after this time FFmpeg stops and Hyperion shows its default (effect, other source or off) until you resume. `0` holds the picture for the whole pause. |
 | **Devices** | none | Devices whose playback drives the lights of the Hyperion server above, usually the TV your LEDs are mounted on. With none selected (here and under [More TVs](#more-tvs)), no playback does. A ticked device shows **Light timing offset for this device (ms)**: leave it empty to use the general offset, or enter this TV's own value. |
 | **Users (optional)** | none | Only playback by these users drives the lights. Leave all unticked to react to every user. |
+| **Follow trailers and extras** | on | Untick to skip trailers, behind-the-scenes and other extras. See [Skip videos](#skip-videos). |
+| **Tag that turns the lights off** | `nolights` | Videos with this tag do not drive the lights. See [Skip videos](#skip-videos). |
+| **Libraries without lights** | none | Videos in the ticked libraries never drive the lights. See [Skip videos](#skip-videos). |
 
 The lists show the devices and users of Jellyfin's recent sessions, most recently active device first. If your TV is
 missing, start playing something on it and press **Refresh**. Saved devices stay in the list (marked
@@ -127,6 +130,23 @@ The picture is decoded with Jellyfin's FFmpeg and the hardware acceleration set 
 **Dashboard → Playback → Transcoding**, scaled to 160 pixels wide in the shape the TV shows (anamorphic DVDs
 included) and, for HDR video, tone mapped to SDR; see [Installation](installation.md#docker-notes). Black bars of
 widescreen films are handled by Hyperion; see [Black bars](hyperion-setup.md#black-bars-widescreen-films).
+
+### Skip videos
+
+Some videos are better without ambient light, such as a children's library, music videos or trailers. Under
+**Skip videos**:
+
+- **Follow trailers and extras**: untick it to skip trailers (also before a film in cinema mode, when they are trailers
+  from your library) and other extras such as behind-the-scenes clips. Intro videos added by other plugins may not
+  count as extras; if one still drives the lights, give it the tag below.
+- **Tag that turns the lights off** (default `nolights`): add the tag to a video in Jellyfin's metadata editor
+  (**⋮ → Edit metadata → Tags**). Case does not matter. A tag on a series or a season covers all its episodes. Leave
+  the field empty to ignore tags.
+- **Libraries without lights**: tick the libraries whose videos never drive the lights.
+
+While a skipped video plays, the lights show Hyperion's default (an effect, another source or off). The
+[status](#status) says why, for example *The lights skip this video: its library Kids is excluded.* Changes apply from
+the next playback.
 
 ### Calibrating the timing
 
