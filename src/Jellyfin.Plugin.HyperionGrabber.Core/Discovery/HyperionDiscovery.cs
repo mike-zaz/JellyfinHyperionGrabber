@@ -24,8 +24,11 @@ namespace Jellyfin.Plugin.HyperionGrabber.Core.Discovery;
 /// <see cref="ListenTime"/>. HyperHDR names its FlatBuffers port in the answer (<c>HYPERHDR-FBS-PORT</c>). Hyperion.ng
 /// puts it in its description document (<c>LOCATION</c>, <c>&lt;ports&gt;&lt;flatBuffer&gt;</c>), which is fetched only
 /// from the address that answered, without redirects, within <see cref="DescriptionTimeout"/> and up to
-/// <see cref="MaxDescriptionLength"/> bytes: a device on the network can make the server read from itself only.</para>
-/// <para>Multicast reaches the network only when the Jellyfin server is on it (Docker: host networking).</para>
+/// <see cref="MaxDescriptionLength"/> bytes: a device on the network can make the server read from itself only. The
+/// descriptions are fetched at the same time, so a search takes about <see cref="ListenTime"/> plus
+/// <see cref="DescriptionTimeout"/> at most.</para>
+/// <para>Multicast reaches the network only when the Jellyfin server is on it (Docker: host networking). Without a route
+/// for it the search finds nothing and logs why.</para>
 /// </remarks>
 public sealed partial class HyperionDiscovery : IDisposable
 {
@@ -80,14 +83,21 @@ public sealed partial class HyperionDiscovery : IDisposable
     /// <returns>The servers that answered, by name.</returns>
     public async Task<IReadOnlyList<DiscoveredServer>> DiscoverAsync(CancellationToken cancellationToken)
     {
-        var answers = await SearchAsync(cancellationToken).ConfigureAwait(false);
-        var servers = new List<DiscoveredServer>(answers.Count);
-        foreach (var (address, answer) in answers)
+        List<(IPAddress Address, SsdpResponse Answer)> answers;
+        try
         {
-            servers.Add(await DescribeAsync(address, answer, cancellationToken).ConfigureAwait(false));
+            answers = await SearchAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (SocketException ex)
+        {
+            // No route for multicast (a container on an internal network, no network at all): nothing can answer.
+            Log.SearchFailed(_logger, ex.Message);
+            return [];
         }
 
-        Log.Found(_logger, servers.Count);
+        // Each fetch is bounded by DescriptionTimeout, so together they take about as long as the slowest one.
+        var servers = await Task.WhenAll(answers.Select(a => DescribeAsync(a.Address, a.Answer, cancellationToken))).ConfigureAwait(false);
+        Log.Found(_logger, servers.Length);
         return servers.OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(s => s.Host, StringComparer.Ordinal).ToList();
     }
 
@@ -231,5 +241,8 @@ public sealed partial class HyperionDiscovery : IDisposable
 
         [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = "Could not read the description at {Location}: {Reason}")]
         public static partial void DescriptionFailed(ILogger logger, Uri location, string reason);
+
+        [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "Could not search the network for Hyperion servers: {Reason}")]
+        public static partial void SearchFailed(ILogger logger, string reason);
     }
 }
