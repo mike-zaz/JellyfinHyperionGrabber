@@ -1,5 +1,5 @@
 site_name: Hyperion Grabber for Jellyfin
-site_description: Ambient lighting for Jellyfin - stream the playing video to Hyperion.ng or HyperHDR.
+site_description: Ambilight for Jellyfin - your WLED, Philips Hue and other LEDs follow the video on any client, through Hyperion.ng or HyperHDR, without capture hardware.
 site_url: https://mike-zaz.github.io/JellyfinHyperionGrabber/
 repo_url: https://github.com/mike-zaz/JellyfinHyperionGrabber
 repo_name: mike-zaz/JellyfinHyperionGrabber

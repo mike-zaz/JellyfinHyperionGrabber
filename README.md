@@ -1,11 +1,13 @@
 <div align="center">
 
+<img src="docs/assets/social-preview.jpg" width="720" alt="A TV on a dark wall showing a sunset; LEDs behind it light the wall in the colors of the picture's edges">
+
 # Hyperion Grabber for Jellyfin
 
-**Ambient lighting for everything you watch in Jellyfin.**
+**Ambilight for everything you watch in Jellyfin, on any client.**
 The plugin streams the playing video to [Hyperion.ng](https://github.com/hyperion-project/hyperion.ng) or
 [HyperHDR](https://github.com/awawa-dev/HyperHDR), which drive your WLED strips, Philips Hue lights and every other
-LED device they support.
+LED device they support. No capture card, no app on the TV.
 
 [![CI](https://github.com/mike-zaz/JellyfinHyperionGrabber/actions/workflows/ci.yml/badge.svg)](https://github.com/mike-zaz/JellyfinHyperionGrabber/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/mike-zaz/JellyfinHyperionGrabber?include_prereleases&sort=semver)](https://github.com/mike-zaz/JellyfinHyperionGrabber/releases)
@@ -37,6 +39,17 @@ in step with your client**, and sends those frames to Hyperion. That means:
   instead of always being late.
 - **HDR done right:** HDR10, HLG and Dolby Vision (including profile 5) are tone mapped to SDR before sending, so
   colors are not washed out.
+- **Nothing to scan in advance:** a video lights up the first time you play it, and no extra files are stored.
+
+### Compared with other setups
+
+| | HDMI capture box | Grabber on the TV or player | Hyperion Grabber for Jellyfin |
+| --- | --- | --- | --- |
+| Extra hardware | Capture card, HDMI splitter | None | None |
+| Works on | One HDMI input | Devices that can run a grabber (not webOS or Tizen apps) | Every Jellyfin client |
+| HDR and copy-protected video | Needs tone mapping; copy protection can block the signal | Hardware-decoded video is often invisible | Decoded from the file; HDR10, HLG and Dolby Vision tone mapped |
+| Timing | A little behind the picture | A little behind the picture | Frames are ready early; a timing offset compensates the LED latency |
+| LED devices and layout | Hyperion | Hyperion | Hyperion: WLED, Philips Hue, Adalight and more, several devices per TV |
 
 ## How it works
 
