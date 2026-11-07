@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Jellyfin.Plugin.HyperionGrabber.Core.Frames;
 using Jellyfin.Plugin.HyperionGrabber.Core.Playback;
 
@@ -45,6 +46,9 @@ public sealed record TargetStatusResponse
     /// <summary>Gets how far the position may be off, in seconds.</summary>
     public double? PositionUncertaintySeconds { get; init; }
 
+    /// <summary>Gets the playback speed when it is not normal (for example 1.5); <see langword="null"/> at 1×.</summary>
+    public double? PlaybackSpeed { get; init; }
+
     /// <summary>Gets the pictures sent to Hyperion per second, over the last second.</summary>
     public double? FramesPerSecond { get; init; }
 
@@ -71,6 +75,9 @@ public sealed record TargetStatusResponse
 
     /// <summary>Gets where the position comes from, in words (Kodi's clock, or the client's reports and why).</summary>
     public string? Timing { get; init; }
+
+    /// <summary>Gets the light timing offset the playback uses, in words, and whether it is the device's own.</summary>
+    public string? LightOffset { get; init; }
 
     /// <summary>Gets the most recent problem, also after it was resolved.</summary>
     public string? LastProblem { get; init; }
@@ -117,6 +124,7 @@ public sealed record TargetStatusResponse
             Since = playback.Since,
             PositionSeconds = Math.Round(session.Position.TotalSeconds, 1),
             PositionUncertaintySeconds = Math.Round(session.PositionUncertainty.TotalSeconds, 2),
+            PlaybackSpeed = Math.Abs(session.PlaybackRate - 1) < 0.005 ? null : Math.Round(session.PlaybackRate, 2),
             FramesPerSecond = Math.Round(session.FramesPerSecond, 1),
             TargetFramesPerSecond = session.TargetFramesPerSecond,
             FramesSent = session.FramesSent,
@@ -126,7 +134,20 @@ public sealed record TargetStatusResponse
             HardwareFallback = session.IsHardwareFallback,
             Picture = session.Picture is { } picture ? DescribePicture(picture) : null,
             Timing = session.TimingSource ?? "The client's reports to Jellyfin.",
+            LightOffset = session.LatencyOffset is { } offset ? DescribeLightOffset(offset, session.IsDeviceLatencyOffset, playback.DeviceName) : null,
         };
+    }
+
+    private static string DescribeLightOffset(TimeSpan offset, bool isDevice, string device)
+    {
+        var milliseconds = (int)Math.Round(offset.TotalMilliseconds);
+        var value = milliseconds switch
+        {
+            > 0 => string.Create(CultureInfo.InvariantCulture, $"{milliseconds} ms earlier"),
+            < 0 => string.Create(CultureInfo.InvariantCulture, $"{-milliseconds} ms later"),
+            _ => "0 ms",
+        };
+        return isDevice ? $"{value}, set for {device}" : $"{value}, the general setting";
     }
 
     private static string Summarize(GrabSessionPhase phase, string device, string video) => phase switch

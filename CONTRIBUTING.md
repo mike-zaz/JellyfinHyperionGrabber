@@ -9,7 +9,9 @@ the rules below are explicit and apply to humans and agents equally.
   devices. Compatibility reports are as valuable as code.
 - **Report bugs** with the [bug form](https://github.com/mike-zaz/JellyfinHyperionGrabber/issues/new/choose).
 - **Improve the docs**: every page has an edit button.
-- **Pick an issue** labelled `good first issue` or `help wanted`, or comment on one to claim it.
+- **Build something.** Open an issue first so the design can be agreed; the
+  [roadmap](https://mike-zaz.github.io/JellyfinHyperionGrabber/roadmap/) shows what is planned and what is done. Issues
+  labelled `good first issue` or `help wanted` are open for anyone; comment on one to claim it.
 
 ## Development setup
 

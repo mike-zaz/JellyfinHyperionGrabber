@@ -32,9 +32,11 @@ Milestones are deliberately small so each one ships something usable. Items beco
       gets more precise with every report *(shipped in 0.4)*
 - [x] Release the lights after a long pause (default 15 s), resume at the playback position *(shipped in 0.3)*
 - [x] Light timing offset (ms), one value for all devices *(shipped in 0.3)*
-- [ ] Per-device timing offset, with a calibration video and guide
+- [x] Per-device timing offset, with a calibration video and guide
+      ([Calibrating the timing](user-guide/configuration.md#calibrating-the-timing))
 - [x] Precise clock for Kodi clients via Kodi's JSON-RPC (position and events in real time) *(shipped in 0.7)*
-- [ ] Playback speed changes
+- [x] Playback speed changes, 0.25× to 2×, measured from Kodi's clock or from other clients' reports
+      ([Playback speed](user-guide/configuration.md#playback-speed))
 
 ## M3: Picture quality
 
@@ -49,7 +51,8 @@ Milestones are deliberately small so each one ships something usable. Items beco
 
 - [x] Auto-discovery of Hyperion.ng / HyperHDR on the network (SSDP, which both answer)
       ([Hyperion server](user-guide/configuration.md#hyperion-server))
-- [ ] Live LED preview on the config page
+- [x] Live preview of the picture sent to Hyperion on the config page
+      ([Status](user-guide/configuration.md#status))
 - [ ] Per-library / per-item opt-out, intros and trailers handling
 - [ ] Localization of the config page
 

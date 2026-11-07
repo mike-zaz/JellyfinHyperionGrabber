@@ -93,11 +93,11 @@ public class PluginConfiguration : BasePluginConfiguration
     {
         var targets = new List<PlaybackTarget>
         {
-            PlaybackTarget.Create(HyperionName, Hyperion(HyperionHost, HyperionPort, HyperionPriority), DeviceIds(PlaybackDevices)),
+            PlaybackTarget.Create(HyperionName, Hyperion(HyperionHost, HyperionPort, HyperionPriority), DeviceIds(PlaybackDevices), DeviceOffsets(PlaybackDevices)),
         };
         foreach (var target in (AdditionalTargets ?? []).Where(target => target is not null && !string.IsNullOrWhiteSpace(target.Host)))
         {
-            targets.Add(PlaybackTarget.Create(target.Name, Hyperion(target.Host, target.Port, target.Priority), DeviceIds(target.Devices)));
+            targets.Add(PlaybackTarget.Create(target.Name, Hyperion(target.Host, target.Port, target.Priority), DeviceIds(target.Devices), DeviceOffsets(target.Devices)));
         }
 
         return targets;
@@ -108,4 +108,9 @@ public class PluginConfiguration : BasePluginConfiguration
 
     private static IEnumerable<string> DeviceIds(Collection<PlaybackDeviceSelection>? devices)
         => (devices ?? []).Where(d => d is not null).Select(d => d.Id);
+
+    private static IEnumerable<KeyValuePair<string, TimeSpan>> DeviceOffsets(Collection<PlaybackDeviceSelection>? devices)
+        => (devices ?? [])
+            .Where(d => d?.Id is not null && d.LatencyOffsetMilliseconds is not null)
+            .Select(d => KeyValuePair.Create(d.Id, TimeSpan.FromMilliseconds(d.LatencyOffsetMilliseconds!.Value)));
 }

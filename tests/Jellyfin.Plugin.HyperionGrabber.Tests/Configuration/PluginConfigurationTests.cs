@@ -117,6 +117,46 @@ public class PluginConfigurationTests
         Assert.Equal(new PlaybackTargetKey("hyperion.local", 19400, 140), target.Key);
         Assert.Equal(["kodi-device"], target.DeviceIds);
         Assert.True(filter.Matches(target, "kodi-device", Alice));
+        Assert.Empty(target.LatencyOffsets); // Devices saved before 0.9 use the general offset.
+    }
+
+    [Fact]
+    public void DeviceOffsets_RoundTripThroughXmlSerializer()
+    {
+        var serializer = new XmlSerializer(typeof(PluginConfiguration));
+        var original = new PluginConfiguration
+        {
+            HyperionHost = "192.168.1.20",
+            PlaybackDevices =
+            [
+                new PlaybackDeviceSelection { Id = "kodi", Name = "Living room", LatencyOffsetMilliseconds = -120 },
+                new PlaybackDeviceSelection { Id = "shield", Name = "Bedroom TV" },
+            ],
+        };
+        using var stream = new MemoryStream();
+
+        serializer.Serialize(stream, original);
+        stream.Position = 0;
+        using var reader = XmlReader.Create(stream, SafeSettings);
+        var copy = Assert.IsType<PluginConfiguration>(serializer.Deserialize(reader));
+
+        Assert.Equal([-120, null], copy.PlaybackDevices.Select(d => d.LatencyOffsetMilliseconds));
+    }
+
+    [Fact]
+    public void DeviceOffsets_ReadFromTheConfigurationPagesJson_ReachTheirTargets()
+    {
+        // An empty offset box is posted as null: that device uses the general offset.
+        var json = """
+            {"HyperionHost":"tv1.local","PlaybackDevices":[{"Id":"kodi","Name":"Living room","LatencyOffsetMilliseconds":250},{"Id":"phone","LatencyOffsetMilliseconds":null}],
+             "AdditionalTargets":[{"Host":"tv2.local","Devices":[{"Id":"kodi","LatencyOffsetMilliseconds":-100}]}]}
+            """;
+
+        var targets = JsonSerializer.Deserialize<PluginConfiguration>(json)!.ToTargets();
+
+        Assert.Equal(TimeSpan.FromMilliseconds(250), Assert.Single(targets[0].LatencyOffsets, o => o.Key == "kodi").Value);
+        Assert.False(targets[0].LatencyOffsets.ContainsKey("phone"));
+        Assert.Equal(TimeSpan.FromMilliseconds(-100), targets[1].LatencyOffsets["kodi"]);
     }
 
     [Fact]

@@ -14,10 +14,16 @@ const HyperionGrabberConfig = {
     defaultPort: 19400,
     defaultPriority: 150,
     maxTargets: 8,
-    statusRefreshMilliseconds: 2000
+    statusRefreshMilliseconds: 2000,
+    previewRefreshMilliseconds: 250
 };
 
 const noDevicesText = 'No devices yet. Start playing something on your TV, then press Refresh.';
+
+// Shown under a selected device. Static markup so Jellyfin upgrades the emby-input.
+const deviceOffsetMarkup = `
+<input is="emby-input" type="number" class="deviceOffset" label="Light timing offset for this device (ms)" min="-2000" max="2000" step="10" placeholder="Empty: the general offset" />
+<div class="fieldDescription">Only if this TV needs another value than the general light timing offset.</div>`;
 
 // One more Hyperion server. Static markup only (names and hosts are set as values afterwards), so Jellyfin upgrades
 // the emby elements; emby-input creates each label from its label attribute.
@@ -268,7 +274,7 @@ function addTargetCard(view, target) {
     card.querySelector('.targetHost').value = target.Host || '';
     card.querySelector('.targetPort').value = target.Port || HyperionGrabberConfig.defaultPort;
     card.querySelector('.targetPriority').value = target.Priority || HyperionGrabberConfig.defaultPriority;
-    renderChoices(card.querySelector('.targetDevices'), view.hyperionOfferedDevices || [], target.Devices || [], noDevicesText);
+    renderChoices(card.querySelector('.targetDevices'), view.hyperionOfferedDevices || [], target.Devices || [], noDevicesText, true);
     wireTestButtons(() => readCardTarget(card), card.querySelector('.targetResult'), card.querySelector('.targetTestConnection'), card.querySelector('.targetTestPattern'));
     wireDiscoverButton(card.querySelector('.targetDiscover'), card.querySelector('.targetDiscoverResult'), function (server) {
         card.querySelector('.targetHost').value = server.Host;
@@ -290,10 +296,11 @@ function normalizeId(id) {
     return String(id || '').replace(/-/g, '').toLowerCase();
 }
 
-// Renders one checkbox per entry: everything Jellyfin offers plus saved selections it no longer lists.
+// Renders one checkbox per entry: everything Jellyfin offers plus saved selections it no longer lists. Device lists
+// (withOffset) also get a timing offset box under each selected device.
 // Names come from Jellyfin clients, so they are only ever set as text.
-function renderChoices(list, offered, selected, emptyText) {
-    const selectedIds = new Set(selected.map(s => normalizeId(s.Id)));
+function renderChoices(list, offered, selected, emptyText, withOffset = false) {
+    const selectedById = new Map(selected.map(s => [normalizeId(s.Id), s]));
     const entries = offered.map(o => ({ Id: o.Id, Name: o.Name, Detail: o.Detail }));
     const offeredIds = new Set(entries.map(e => normalizeId(e.Id)));
     for (const saved of selected) {
@@ -319,16 +326,62 @@ function renderChoices(list, offered, selected, emptyText) {
         const input = label.querySelector('input');
         input.dataset.id = entry.Id;
         input.dataset.name = entry.Name;
-        input.checked = selectedIds.has(normalizeId(entry.Id));
+        const saved = selectedById.get(normalizeId(entry.Id));
+        input.checked = saved !== undefined;
         label.querySelector('span').textContent = entry.Detail ? `${entry.Name} (${entry.Detail})` : entry.Name;
         list.append(label);
+        if (withOffset) {
+            const offset = document.createElement('div');
+            offset.className = 'inputContainer deviceOffsetContainer';
+            offset.innerHTML = deviceOffsetMarkup;
+            const savedOffset = saved ? saved.LatencyOffsetMilliseconds : null;
+            const box = offset.querySelector('.deviceOffset');
+            box.value = Number.isInteger(savedOffset) ? savedOffset : '';
+            // Hidden and disabled together: a disabled box is left out of the form's validation, so a value left in
+            // an unticked device's box cannot block Save without a visible message.
+            const showOffset = () => {
+                offset.hidden = !input.checked;
+                box.disabled = !input.checked;
+            };
+            showOffset();
+            input.addEventListener('change', showOffset);
+            list.append(offset);
+        }
     }
+}
+
+// The offset box of a device follows its checkbox's label (see renderChoices).
+function offsetBoxOf(input) {
+    const next = input.closest('label').nextElementSibling;
+    return next && next.classList.contains('deviceOffsetContainer') ? next.querySelector('.deviceOffset') : null;
 }
 
 function readChoices(list) {
     return Array.from(list.querySelectorAll('input[type="checkbox"]'))
         .filter(input => input.checked)
-        .map(input => ({ Id: input.dataset.id, Name: input.dataset.name }));
+        .map(input => {
+            const choice = { Id: input.dataset.id, Name: input.dataset.name };
+            const box = offsetBoxOf(input);
+            if (box) {
+                const text = box.value.trim();
+                choice.LatencyOffsetMilliseconds = text === '' ? null : Number(text);
+            }
+
+            return choice;
+        });
+}
+
+// Returns a message for the first device whose own timing offset is not a whole number in range.
+function validateDeviceOffsets(devices) {
+    const maxOffset = HyperionGrabberConfig.maxLatencyOffsetMilliseconds;
+    for (const device of devices) {
+        const offset = device.LatencyOffsetMilliseconds;
+        if (offset !== null && offset !== undefined && (!Number.isInteger(offset) || offset < -maxOffset || offset > maxOffset)) {
+            return `The light timing offset of ${device.Name || 'a device'} must be empty or between -${maxOffset} and ${maxOffset} ms.`;
+        }
+    }
+
+    return null;
 }
 
 function describeDevice(device) {
@@ -346,10 +399,10 @@ async function loadClients(view, selectedDevices, selectedUsers) {
 
     const offeredDevices = (clients.Devices || []).map(d => ({ Id: d.Id, Name: d.Name, Detail: describeDevice(d) }));
     view.hyperionOfferedDevices = offeredDevices;
-    renderChoices(view.querySelector('#PlaybackDeviceList'), offeredDevices, selectedDevices, noDevicesText);
+    renderChoices(view.querySelector('#PlaybackDeviceList'), offeredDevices, selectedDevices, noDevicesText, true);
     for (const card of targetCards(view)) {
         const list = card.querySelector('.targetDevices');
-        renderChoices(list, offeredDevices, readChoices(list), noDevicesText);
+        renderChoices(list, offeredDevices, readChoices(list), noDevicesText, true);
     }
 
     renderChoices(
@@ -375,11 +428,16 @@ function describeStatus(status) {
     }
 
     if (typeof status.PositionSeconds === 'number') {
-        lines.push(`Position: ${formatPosition(status.PositionSeconds)} (±${status.PositionUncertaintySeconds.toFixed(1)} s)`);
+        const speed = typeof status.PlaybackSpeed === 'number' ? `, at ${status.PlaybackSpeed}× speed` : '';
+        lines.push(`Position: ${formatPosition(status.PositionSeconds)} (±${status.PositionUncertaintySeconds.toFixed(1)} s)${speed}`);
     }
 
     if (status.Timing) {
         lines.push(`Timing: ${status.Timing}`);
+    }
+
+    if (status.LightOffset) {
+        lines.push(`Light timing offset: ${status.LightOffset}`);
     }
 
     if (typeof status.FramesPerSecond === 'number') {
@@ -413,6 +471,7 @@ function listItem(text) {
 // With one Hyperion server the panel looks as it always did; with several, each gets its own entry.
 function renderStatus(view, status) {
     const targets = status.Targets || [];
+    view.hyperionTargetNames = targets.map(target => target.Name);
     const single = targets.length === 1 ? targets[0] : null;
     view.querySelector('#HyperionStatusSummary').textContent = status.Summary;
     const problem = view.querySelector('#HyperionStatusProblem');
@@ -495,9 +554,132 @@ function stopStatusRefresh(view) {
     view.hyperionStatusRefresh = null;
 }
 
+// Draws a picture from the preview endpoint (RGB24 as base64) onto a canvas.
+function drawPreview(canvas, preview) {
+    const bytes = atob(preview.Pixels);
+    canvas.width = preview.Width;
+    canvas.height = preview.Height;
+    const context = canvas.getContext('2d');
+    const image = context.createImageData(preview.Width, preview.Height);
+    for (let source = 0, target = 0; source + 2 < bytes.length; source += 3, target += 4) {
+        image.data[target] = bytes.charCodeAt(source);
+        image.data[target + 1] = bytes.charCodeAt(source + 1);
+        image.data[target + 2] = bytes.charCodeAt(source + 2);
+        image.data[target + 3] = 255;
+    }
+
+    context.putImageData(image, 0, 0);
+}
+
+// One entry per Hyperion server: a caption and a canvas.
+function previewEntry(list, index) {
+    let entry = list.children[index];
+    if (!entry) {
+        entry = document.createElement('div');
+        entry.innerHTML = '<div class="fieldDescription"></div><canvas></canvas>';
+        const canvas = entry.querySelector('canvas');
+        canvas.style.width = '100%';
+        canvas.style.maxWidth = '480px';
+        list.append(entry);
+    }
+
+    return entry;
+}
+
+// Server names come from the configuration, so they are only ever set as text.
+async function loadPreviews(view) {
+    const names = view.hyperionTargetNames || [];
+    const count = Math.max(1, names.length);
+    const list = view.querySelector('#PreviewList');
+    while (list.children.length > count) {
+        list.lastElementChild.remove();
+    }
+
+    for (let index = 0; index < count; index++) {
+        const entry = previewEntry(list, index);
+        const caption = entry.querySelector('div');
+        const canvas = entry.querySelector('canvas');
+        const url = ApiClient.getUrl('HyperionGrabber/Preview');
+        let preview = null;
+        try {
+            preview = await ApiClient.ajax({ type: 'GET', url: `${url}${url.includes('?') ? '&' : '?'}target=${index}`, dataType: 'json' });
+        } catch {
+            preview = null;
+        }
+
+        const several = names.length > 1;
+        if (preview && preview.Available) {
+            caption.textContent = several ? names[index] : '';
+            caption.hidden = !several;
+            canvas.hidden = false;
+            drawPreview(canvas, preview);
+        } else {
+            caption.textContent = several ? `${names[index]}: nothing to show while no video plays.` : 'Nothing to show while no video plays.';
+            caption.hidden = false;
+            canvas.hidden = true;
+        }
+    }
+}
+
+// Polls like the status: only while the preview is on and the browser tab is visible; one request at a time.
+function startPreview(view) {
+    stopPreview(view);
+    const preview = { active: true, loading: false, timer: 0 };
+    const tick = async () => {
+        preview.timer = 0;
+        if (!preview.active || preview.loading || document.hidden) {
+            return;
+        }
+
+        preview.loading = true;
+        try {
+            await loadPreviews(view);
+        } finally {
+            preview.loading = false;
+        }
+
+        if (preview.active && !document.hidden) {
+            preview.timer = setTimeout(tick, HyperionGrabberConfig.previewRefreshMilliseconds);
+        }
+    };
+    preview.onVisibilityChange = () => {
+        if (!document.hidden && !preview.timer) {
+            tick();
+        }
+    };
+    document.addEventListener('visibilitychange', preview.onVisibilityChange);
+    view.hyperionPreview = preview;
+    view.querySelector('#PreviewList').hidden = false;
+    view.querySelector('#PreviewToggle span').textContent = 'Hide live preview';
+    tick();
+}
+
+function stopPreview(view) {
+    const preview = view.hyperionPreview;
+    if (!preview) {
+        return;
+    }
+
+    preview.active = false;
+    clearTimeout(preview.timer);
+    document.removeEventListener('visibilitychange', preview.onVisibilityChange);
+    view.hyperionPreview = null;
+    view.querySelector('#PreviewList').hidden = true;
+    view.querySelector('#PreviewToggle span').textContent = 'Show live preview';
+}
+
 export default function (view) {
     view.addEventListener('viewhide', function () {
         stopStatusRefresh(view);
+        stopPreview(view);
+    });
+
+    view.querySelector('#PreviewToggle').addEventListener('click', function () {
+        if (view.hyperionPreview) {
+            stopPreview(view);
+        } else {
+            startPreview(view);
+        }
     });
 
     view.addEventListener('viewshow', function () {
@@ -591,7 +773,8 @@ export default function (view) {
         const pauseRelease = readInteger(view, '#PauseReleaseSeconds');
         const kodiClock = view.querySelector('#KodiClockEnabled').checked;
         const kodiPort = readInteger(view, '#KodiJsonRpcPort');
-        const fpsProblem = validateFramesPerSecond(framesPerSecond) || validateTiming(latencyOffset, pauseRelease) || validateKodiPort(kodiPort);
+        const fpsProblem = validateFramesPerSecond(framesPerSecond) || validateTiming(latencyOffset, pauseRelease) || validateKodiPort(kodiPort)
+            || validateDeviceOffsets([...devices, ...additionalTargets.flatMap(t => t.Devices)]);
         if (fpsProblem) {
             showPlaybackResult(view, '✖ ' + fpsProblem);
             return false;
